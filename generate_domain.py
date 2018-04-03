@@ -577,13 +577,51 @@ def parse_pddl_state(pddl, size, remove_not=False):
         for s in split:
             if "not" in s:
                 continue
-            else new_pddl += str(s)
+            else: new_pddl += str(s)
         pddl = new_pddl
     pddl_split = pddl.replace(" ", "").replace(",","").replace(")","").replace("(","").replace("\n","").replace("[","").replace("]","")
     pddl_split = filter(None ,pddl_split.split('p'))
     for pddl in pddl_split:
         output[int(pddl)] = 1
     return output
+
+def generate_lstm_dataset(directory='samples/', size=36):
+    list_domain = ['hanoi', 'mnist', 'lodigital', 'lotwisted', 'mandrill', 'spider']
+    for domain in list_domain:
+        data = open('lstm_dataset/'+domain+'.csv', 'w')
+        data.write('')
+        data.close()
+    for dirpath, dirnames, filenames in os.walk(directory):
+        sequence_line = ''
+        for domain in list_domain:
+            sequence_line = ''
+            if domain in dirpath:
+                sequence_line = ''
+                print('Working on: ', dirpath)
+                change_obs = False
+                trace = open(dirpath+'/obs.dat', 'r')
+                goal = open(dirpath+'/real_hyp.dat', 'r')
+                for line in trace:
+                    if 'a' in line: 
+                        change_obs = True
+                        break
+                    else:
+                        break
+                if change_obs:
+                    trace = open(dirpath+'/obs2.dat', 'r')
+                #print(dirpath, dirnames, filenames)
+                for line in trace:
+                    sequence_line += str(parse_pddl_state(line,size, True)) 
+                    sequence_line += ';'
+                    
+                sequence_line = sequence_line[:-1]
+                sequence_line += '@' + str(parse_pddl_state(goal.readline(),size,True))
+                data = open('lstm_dataset/'+domain+'.csv', 'a')
+                data.write(sequence_line + '\n')
+                data.close()
+ 
+
+
 
 if __name__ == '__main__':
     import sys
@@ -592,7 +630,9 @@ if __name__ == '__main__':
     elif sys.argv[1] == 'recon':
         set_up_pgr(*sys.argv[2:])
     elif sys.argv[1] == 'online':
-        set_up_online_pgr(*sys.argv[2:])       
+        set_up_online_pgr(*sys.argv[2:])
+    elif sys.argv[1] == 'lstm':
+        generate_lstm_dataset(*sys.argv[2:])        
     #if len(sys.argv) < 3:
      #   sys.exit("{} [networkdir] [problemdir]".format(sys.argv[0]))
     #main(*sys.argv[1:])

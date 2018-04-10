@@ -1,8 +1,12 @@
 # coding: utf-8
 from utils import *
+from copy import deepcopy
 from keras.utils import to_categorical
 from keras.preprocessing.text import one_hot
 
+
+x_dict = dict()
+y_dict = dict()
 
 def seq2one_model():
     pass
@@ -32,34 +36,63 @@ def read_data():
     return data_dict
 
 
+def generate_x_dict(vocab):
+    global x_dict    
+
+    for i, word in enumerate(vocab, 1):
+        x_dict[word] = i
+
+
+def generate_y_dict(y):
+    global x_dict
+    global y_dict
+
+    y_dict = deepcopy(x_dict)
+
+    set_y = set(y)
+
+    for i, word in enumerate(set_y, 1):
+        if word not in y_dict:
+            y_dict[word] = i
+
+
 def preprocess_data(data, key):
+    global x_dict
+    global y_dict
 
     new_x, new_y = [], []
 
     # Convert data to the proper input of lstm.
     x, y = data
-    print(x[0])
 
     # Check how many different state exist.
     vocab = list(set([st_i for seq_st in x for st_i in seq_st]))
+    generate_x_dict(vocab)    
     
     # Get the biggest sequence of states.
-    max_len = max(x, key=len)
+    max_len = len(max(x, key=len))
     
     for seq_st in x:
         new_seq_st = []
 
         for st in seq_st:
+            new_seq_st.append(x_dict[st])
 
-            new_seq_st.append(one_hot(st, len(vocab)))
+        if len(new_seq_st) < max_len:
+            # Zero padding.
+            new_seq_st = new_seq_st + ((max_len - len(new_seq_st)) * [0])
 
         new_x.append(new_seq_st)
 
-    for y_i in y:
-        new_y.append(one_hot(y_i, len(y)))
+    generate_y_dict(y)
 
-    print(new_x[0], new_y[0])
-    sys.exit(1)
+    for y_i in y:
+        new_y.append(y_dict[y_i])
+    
+    for j in range(len(new_x)):
+    
+        print(new_x[j], new_y[j])
+#    sys.exit(1)
 
 
 if __name__ == "__main__":
@@ -69,5 +102,6 @@ if __name__ == "__main__":
     print("Dictionary ready, checking keys: {}".format(data_dict.keys()))
 
     for key in data_dict:
-
+        print(key)
         preprocess_data(data_dict[key], key)
+        sys.exit(0)

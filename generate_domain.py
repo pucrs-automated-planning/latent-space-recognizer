@@ -585,11 +585,22 @@ def parse_pddl_state(pddl, size, remove_not=False):
         output[int(pddl)] = 1
     return output
 
+def generate_subsets(data, _min):
+    result = []
+    for x in range(0,len(data) - _min + 1):
+        for y in range(0, len(data) -_min +1):
+            if len(data[x: len(data) - y]) < _min: 
+                break
+            result.append(data[x: len(data) - y])
+    return result
+
 def generate_lstm_dataset(directory='samples/', size=36):
     list_domain = ['hanoi', 'mnist', 'lodigital', 'lotwisted', 'mandrill', 'spider']
+    domain_dict = dict()
     for domain in list_domain:
         data = open('lstm_dataset/'+domain+'.csv', 'w')
         data.write('')
+        domain_dict[domain] = set()
         data.close()
     for dirpath, dirnames, filenames in os.walk(directory):
         sequence_line = ''
@@ -610,15 +621,35 @@ def generate_lstm_dataset(directory='samples/', size=36):
                 if change_obs:
                     trace = open(dirpath+'/obs2.dat', 'r')
                 #print(dirpath, dirnames, filenames)
-                for line in trace:
-                    sequence_line += str(parse_pddl_state(line,size, True)) 
-                    sequence_line += ';'
-                    
-                sequence_line = sequence_line[:-1]
-                sequence_line += '@' + str(parse_pddl_state(goal.readline(),size,True))
-                data = open('lstm_dataset/'+domain+'.csv', 'a')
-                data.write(sequence_line + '\n')
-                data.close()
+                if '100' in dirpath:
+                    states = []
+                    for line in trace:
+                        states.append(str(parse_pddl_state(line,size, True)))
+                    subsets = generate_subsets(states, 3)
+                    print('Creatated ', len(subsets), 'subsets')
+                    print(subsets)
+                    for sub in subsets:
+                        sequence_line = ''
+                        for state in sub:
+                            sequence_line += str(state) 
+                            sequence_line += ';'
+                            last_state = str(state)
+                        sequence_line += '@' + last_state
+
+                        domain_dict[domain].add(sequence_line)
+                else:
+                    for line in trace:
+                        sequence_line += str(parse_pddl_state(line,size, True)) 
+                        sequence_line += ';' 
+                    sequence_line = sequence_line[:-1]
+                    sequence_line += '@' + str(parse_pddl_state(goal.readline(),size,True))
+                    print(sequence_line, dirpath)
+                    domain_dict[domain].add(sequence_line)
+    for domain in list_domain:
+        data = open('lstm_dataset/'+domain+'.csv', 'a')
+        for d in domain_dict[domain]:
+            data.write(d + '\n')
+        data.close()
  
 
 

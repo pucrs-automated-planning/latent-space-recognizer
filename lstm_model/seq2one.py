@@ -28,23 +28,19 @@ def _start(gpu):
 _start(0) 
 
 
-def seq2one_model(vocab, max_len, y_vocab_len):
+def seq2one_model(vocab, max_len):
     
     model = Sequential()
 
     # Creating encoder network
     model.add(Embedding(vocab, 1000, input_length=max_len, mask_zero=True))
     model.add(LSTM(512))
-    # model.add(RepeatVector(y_max_len))
-
-    # # Creating decoder network
-    # for _ in range(num_layers):
-    #     model.add(LSTM(hidden_size, return_sequences=True))
-    model.add(Dense(y_vocab_len))
-    model.add(Activation('softmax'))
-    model.compile(loss='categorical_crossentropy',
+    model.add(Dense(ST_SIZE))
+    model.add(Activation('sigmoid'))
+    model.compile(loss='binary_crossentropy',
             optimizer='rmsprop',
             metrics=['accuracy'])
+    print model.summary()
     return model
 
 
@@ -78,19 +74,19 @@ def generate_x_dict(x_dict, vocab):
         x_dict[word] = i
 
 
-def generate_y_dict(y_dict, y):
-    # Generate a numeric representation for classes.
-    set_y = set(y)
+# def generate_y_dict(y_dict, y):
+#     # Generate a numeric representation for classes.
+#     set_y = set(y)
 
-    for i, word in enumerate(set_y):
-        if word not in y_dict:
-            y_dict[word] = i
+#     for i, word in enumerate(set_y):
+#         if word not in y_dict:
+#             y_dict[word] = i
 
 
 def preprocess_data(data, key):
     
     x_dict = dict()
-    y_dict = dict()
+    # y_dict = dict()
 
     new_x, new_y = [], []
 
@@ -117,18 +113,35 @@ def preprocess_data(data, key):
         new_x.append(new_seq_st)
 
     # Generate a dict for representing y states.
-    generate_y_dict(y_dict, y)
+    # generate_y_dict(y_dict, y)
 
-    for y_i in y:
-        # Convert each state into its new representation.
-        new_y.append(y_dict[y_i])
+    # for y_i in y:
+    #     # Convert each state into its new representation.
+    #     new_y.append(y_dict[y_i])
 
     # Turn everything one hot encoding for softmax classification.
-    new_y = to_categorical(new_y, num_classes=len(set(new_y)))
+    # new_y = to_categorical(new_y, num_classes=len(set(new_y)))
 
-    X_train, X_test, y_train, y_test = train_test_split(new_x, new_y.tolist(), test_size=0.2, random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(new_x, y, test_size=0.2, random_state=42)
 
-    return X_train, X_test, y_train, y_test, len(vocab), max_len, len(y_dict.keys())
+    return X_train, X_test, y_train, y_test, len(vocab), max_len
+
+
+def train_model(model, x, y, save_path):
+
+    # Callbacks for training.
+    model_check = ModelCheckpoint(save_path, monitor='val_loss', verbose=1, save_best_only=True, save_weights_only=False, mode='auto', period=1)
+    early = EarlyStopping(monitor='val_loss', min_delta=0, patience=2, verbose=1, mode='auto')
+
+    model.fit(x=x, y=y, epochs=100000, batch_size=2, verbose=1, callbacks=[model_check, early], validation_split=0.1, steps_per_epoch=None)
+
+
+def test_model(model, x, y, saved_model):
+
+    test_model = load_model(saved_model) # Load the best model to test.
+    loss, acc = test_model.evaluate(x=x, y=y, batch_size=2, verbose=1)
+
+    print('Test loss / test accuracy = {:.4f} / {:.4f}'.format(loss, acc))
 
 if __name__ == "__main__":
 
@@ -139,20 +152,11 @@ if __name__ == "__main__":
 
     for key in data_dict:
         print("Processing domain: %s" % key)
-        print("This domain has %d samples and %d distinct classes." % (len(data_dict[key][0]), len(set(data_dict[key][1]))))
-        X_train, X_test, y_train, y_test, vocab, max_len, len_y = preprocess_data(data_dict[key], key)
-        model = seq2one_model(vocab, max_len, len_y)
+        print("This domain has %d samples and - distinct classes." % len(data_dict[key][0]))#, len(set(data_dict[key][1]))))
+        X_train, X_test, y_train, y_test, vocab, max_len = preprocess_data(data_dict[key], key)
+        model = seq2one_model(vocab, max_len)
 
         save_model_path = 'models/' + key + '_model.h5' # Set the path to save the best model.
 
-        # Callbacks for training.
-        model_check = ModelCheckpoint(save_model_path, monitor='val_loss', verbose=1, save_best_only=True, save_weights_only=False, mode='auto', period=1)
-        early = EarlyStopping(monitor='val_loss', min_delta=0, patience=2, verbose=1, mode='auto')
-
-        model.fit(x=X_train, y=y_train, epochs=100000, batch_size=2, verbose=1, callbacks=[model_check, early], validation_split=0.1, steps_per_epoch=None)
-
-        test_model = load_model(save_model_path) # Load the best model to test.
-
-        loss, acc = test_model.evaluate(x=X_test, y=y_test, batch_size=2, verbose=1)
-
-        print('Test loss / test accuracy = {:.4f} / {:.4f}'.format(loss, acc))
+        train_model(model, X_train, y_train, save_model_path)
+        test_model(model, X_test, y_test, save_model_path)

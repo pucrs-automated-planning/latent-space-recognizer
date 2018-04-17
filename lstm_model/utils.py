@@ -33,7 +33,7 @@ def read_dataset(file_path):
             states.append(st)
             
         # Process class.
-        y = ''.join(y.strip('[]\n').split(', '))
+        y = eval(y)#''.join(y.strip('[]\n').split(', '))
 
         X.append(states[:-1]) # Removing the last state because it is the proper goal.
         Y.append(y)

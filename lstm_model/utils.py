@@ -26,13 +26,16 @@ def read_dataset(file_path):
         for inp in inputs:
             # Process inputs.
             st = ''.join(inp.strip('[]').split(', '))
+            if not len(st):
+                continue
+
             assert (len(st))
             states.append(st)
             
         # Process class.
         y = ''.join(y.strip('[]\n').split(', '))
 
-        X.append(states)
+        X.append(states[:-1]) # Removing the last state because it is the proper goal.
         Y.append(y)
 
     return X, Y

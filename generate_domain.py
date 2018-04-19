@@ -585,6 +585,8 @@ def parse_pddl_state(pddl, size, remove_not=False):
         output[int(pddl)] = 1
     return output
 
+
+#Generate subsets for lstm dataset
 def generate_subsets(data, _min):
     result = []
     for x in range(0,len(data) - _min + 1):
@@ -592,10 +594,11 @@ def generate_subsets(data, _min):
             if len(data[x: len(data) - y]) < _min: 
                 break
             result.append(data[x: len(data) - y])
-    results.remove(data)
+    result.remove(data)
     return result
 
-def generate_lstm_dataset(directory='samples/', size=36):
+#Generate LSTM dataset from GR problems in the output folder. It removes the problems themselves to preserve fairness during comparison
+def generate_lstm_dataset(directory='output/', size=36):
     list_domain = ['hanoi', 'mnist', 'lodigital', 'lotwisted', 'mandrill', 'spider']
     domain_dict = dict()
     excluded = dict()
@@ -615,6 +618,7 @@ def generate_lstm_dataset(directory='samples/', size=36):
                 change_obs = False
                 trace = open(dirpath+'/obs.dat', 'r')
                 goal = open(dirpath+'/real_hyp.dat', 'r')
+                goal_str =  str(parse_pddl_state(goal.readline(),size,True))
                 for line in trace:
                     if 'a' in line: 
                         change_obs = True
@@ -629,25 +633,28 @@ def generate_lstm_dataset(directory='samples/', size=36):
                         states.append(str(parse_pddl_state(line,size, True)))
                     subsets = generate_subsets(states, 3)
                     print('Creatated ', len(subsets), 'subsets')
-                    print(subsets)
                     for sub in subsets:
                         sequence_line = ''
                         for state in sub:
                             sequence_line += str(state) 
                             sequence_line += ';'
                             last_state = str(state)
-                        sequence_line += '@' + last_state
+                        sequence_line += '@' + goal_str
                         domain_dict[domain].add(sequence_line)
                     obs_set =  [70,50,30,10]
+                    print(goal_str)
                     for obs in obs_set:
-                        for i in range(50):
+                        sequence_line = ''
+                        for i in range(200):
                             p_states = percentage_slice(states,float(obs)/100.0)
                             sequence_line = ''
-                            for state in sub:
+                            for state in p_states:
                                 sequence_line += str(state) 
                                 sequence_line += ';'
-                            sequence_line += '@' + str(parse_pddl_state(goal.readline(),size,True))
-                            domain_dict[domain].add(sequence_line)
+                            sequence_line += '@' + goal_str
+                            if sequence_line not in domain_dict[domain]:
+                                print('new entry on: ', i, dirpath, 'obs: ', obs)
+                                domain_dict[domain].add(str(sequence_line))
                 else:
                     states = []
                     for line in trace:
@@ -657,21 +664,18 @@ def generate_lstm_dataset(directory='samples/', size=36):
                         sequence_line += str(state) 
                         sequence_line += ';'
                     goal = open(dirpath+'/real_hyp.dat', 'r')
-                    sequence_line += '@' + str(parse_pddl_state(goal.readline(),size,True))
+                    sequence_line += '@' + goal_str
                     excluded[domain].add(sequence_line)
-                    #for i in range(50):
-                    #    p_states = percentage_slice(, float(obs)/100.0)
 
-                    #for line in trace:
-                    #    sequence_line += str(parse_pddl_state(line,size, True)) 
-                    #    sequence_line += ';' 
-                    #sequence_line += '@' + str(parse_pddl_state(goal.readline(),size,True))
-                    #print(sequence_line, dirpath)
-                    #domain_dict[domain].add(sequence_line)
+    removed = 0
     for domain in list_domain:
+        print('Excluded size: ', len(excluded[domain]), 'domain: ', domain)
         for e in excluded[domain]:
-            if e in domain[domain]:
-                domain[domain].remove(e)
+
+            if e in domain_dict[domain]:
+                domain_dict[domain].remove(e)
+                removed += 1
+    print('Removed:', removed)
     for domain in list_domain:
         data = open('lstm_dataset/'+domain+'.csv', 'a')
         for d in domain_dict[domain]:

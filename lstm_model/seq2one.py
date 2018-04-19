@@ -2,6 +2,7 @@
 import os
 import random
 import pickle
+import numpy as np
 from utils import *
 from copy import deepcopy
 from keras.layers import Embedding, LSTM, Dense, Activation
@@ -42,7 +43,6 @@ def seq2one_model(vocab, max_len):
     model.compile(loss='binary_crossentropy',
             optimizer='rmsprop',
             metrics=['accuracy'])
-    print(model.summary())
     return model
 
 
@@ -76,10 +76,10 @@ def generate_x_dict(x_dict, vocab):
         x_dict[word] = i
 
 
-def save_dict(x_dict, domain):
+def save_obj(obj, domain, obj_type):
     # Save dictionary made to the specific domain.
-    output_path = os.path.join(SAVE_MODELS_PATH, domain + "_dict.pkl")
-    pickle.dump(x_dict, open(output_path, 'w'))
+    output_path = os.path.join(SAVE_MODELS_PATH, domain + "_"+obj_type+".pkl")
+    pickle.dump(obj, open(output_path, 'w'))
 
 
 def preprocess_data(data, key):
@@ -95,11 +95,12 @@ def preprocess_data(data, key):
     # Check how many different state exist.
     vocab = list(set([st_i for seq_st in x for st_i in seq_st]))
     generate_x_dict(x_dict, vocab)
-    save_dict(x_dict, key)
+    save_obj(x_dict, key, 'dict')
     
     # Get the biggest sequence of states.
     max_len = len(max(x, key=len))
-    
+    save_obj(max_len, key, 'max_len')
+
     for seq_st in x:
         new_seq_st = []
 
@@ -123,19 +124,32 @@ def train_model(model, x, y, save_path):
     model_check = ModelCheckpoint(save_path, monitor='val_loss', verbose=1, save_best_only=True, save_weights_only=False, mode='auto', period=1)
     early = EarlyStopping(monitor='val_loss', min_delta=0, patience=2, verbose=1, mode='auto')
 
-    model.fit(x=x, y=y, epochs=100000, batch_size=2, verbose=1, callbacks=[model_check, early], validation_split=0.1, steps_per_epoch=None)
+    model.fit(x=np.array(x), y=np.array(y), epochs=100000, batch_size=2, verbose=1, callbacks=[model_check, early], validation_split=0.1, steps_per_epoch=None)
 
 
-def test_model(model, x, y, saved_model):
-
-    test_model = load_model(saved_model) # Load the best model to test.
-    loss, acc = test_model.evaluate(x=x, y=y, batch_size=2, verbose=1)
+def evaluate_model(model, x, y, saved_model):
+    # Measure accuracy given a model.
+    eval_model = load_model(saved_model) # Load the best model to test.
+    loss, acc = eval_model.evaluate(x=np.array(x), y=np.array(y), batch_size=2, verbose=1)
 
     print('Test loss / test accuracy = {:.4f} / {:.4f}'.format(loss, acc))
 
-if __name__ == "__main__":
 
-    batch_size = 1
+def test_model(saved_model, dict_path, len_path, data):
+    # TODO: Save the output to a file.
+    model = load_model(saved_model)
+    x_dict = pickle.load(open(dict_path, 'r'))
+    max_len = pickle.load(open(len_path, 'r'))
+
+    for states in data:
+        seq = np.zeros((max_len))
+        for i, state in enumerate(states):
+            seq[i] = x_dict.get(state, -1)
+        print np.round(model.predict(seq.reshape(1, max_len), verbose=1))
+
+
+def train():
+
     data_dict = read_data()
 
     print("Dictionary ready, checking keys: {}".format(data_dict.keys()))
@@ -149,4 +163,10 @@ if __name__ == "__main__":
         save_model_path = os.path.join(SAVE_MODELS_PATH, key + '_model.h5') # Set the path to save the best model.
 
         train_model(model, X_train, y_train, save_model_path)
-        test_model(model, X_test, y_test, save_model_path)
+        evaluate_model(model, X_test, y_test, save_model_path)
+
+if __name__ == "__main__":
+    # TODO: Use arguments to start the processing.
+    # train()
+
+    test_model('models/lotwisted_model.h5', 'models/lotwisted_dict.pkl', 'models/lotwisted_max_len.pkl', [['010011010100110110000010010011100100', '101110011010111101110000110110100100']])

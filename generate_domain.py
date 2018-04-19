@@ -16,7 +16,7 @@ import numpy as np
 #Latent layer size
 #N = 36
 FD_PATH = '../fast_downward/'
-MP_PATH = '../MauPlanner/'
+MP_PATH = '../../MauPlanner/'
 SIZE_H = 42
 SIZE_W = 42
 ONLINE_REQ_JAR = ''
@@ -496,6 +496,40 @@ def set_up_pgr(network_folder,path_domain, path_dir, path_output='out1', pddl_ac
     export_hypothesis(candidate_goals, path=path_output + '/' + 'hyps.dat')
     export_hypothesis([goal], path=path_output+ '/' +'real_hyp.dat')
 
+def plan_return_bin(network_folder,path_domain, path_dir, path_output='out1', pddl_actions='pddl_actions.csv', obs=100, plan=False):
+    print("Working on:", path_domain, path_dir)
+    enc_dec = EncoderDecoder(network_folder)
+    onlyfiles = [f for f in listdir(path_dir) if isfile(join(path_dir, f))]
+    img_init = enc_dec._open_image(path_dir+'/init.png')
+    SIZE_H, SIZE_W = img_init.shape     
+    init = enc_dec.encode(path_dir+'/init.png', True)
+    goal = enc_dec.encode(path_dir+'/goal.png', True)
+    try:
+        os.makedirs(path_output)
+    except OSError as e:
+        if e.errno != errno.EEXIST:
+            raise
+    create_problem(init, goal, path_output + '/problem_neg.pddl')
+    create_problem_no_negatives(init, goal, path_output + '/problem.pddl')
+    if plan:
+        print("Planning: ", path_domain, path_dir)
+        plan_mp(path_domain, path_output+'/problem.pddl')
+        print("Done")
+    else:
+        print("Planning skiped!")
+    save_plan_img(cvt_ttotran_MP(init.tolist(),pddl_actions), path_output + '/plan.png', enc_dec, SIZE_H, SIZE_W)
+    export_problem_pgr(init, path_output+ '/')
+    transitions = cvt_ttotran_MP(init,pddl_actions)
+    traces = cvt_trantotrace(cvt_ttotran_MP(init,pddl_actions),pddl_actions)
+    p_traces = percentage_slice(traces, float(obs)/100.0)
+    sequence_line = ''
+    for state in transitions:
+        sequence_line += str(state) 
+        sequence_line += ';'
+        last_state = str(state)
+    sequence_line += '@' + str(goal)
+    print(sequence_line)
+
 #setup_complete_test('mnist01')
 #plan_fd('new_domain.pddl','new_problem.pddl')
 
@@ -669,12 +703,14 @@ def generate_lstm_dataset(directory='output/', size=36):
 
     removed = 0
     for domain in list_domain:
+        data = open('lstm_dataset/'+domain+'_removed.csv', 'w')
         print('Excluded size: ', len(excluded[domain]), 'domain: ', domain)
         for e in excluded[domain]:
-
             if e in domain_dict[domain]:
                 domain_dict[domain].remove(e)
                 removed += 1
+            data.write(e + '\n')
+        data.close()
     print('Removed:', removed)
     for domain in list_domain:
         data = open('lstm_dataset/'+domain+'.csv', 'a')
@@ -694,7 +730,9 @@ if __name__ == '__main__':
     elif sys.argv[1] == 'online':
         set_up_online_pgr(*sys.argv[2:])
     elif sys.argv[1] == 'lstm':
-        generate_lstm_dataset(*sys.argv[2:])        
+        generate_lstm_dataset(*sys.argv[2:])
+    elif sys.argv[1] == 'plan':
+        plan_return_bin(*sys.argv[2:])        
     #if len(sys.argv) < 3:
      #   sys.exit("{} [networkdir] [problemdir]".format(sys.argv[0]))
     #main(*sys.argv[1:])

@@ -1,5 +1,7 @@
 # coding: utf-8
+import os
 import random
+import pickle
 from utils import *
 from copy import deepcopy
 from keras.layers import Embedding, LSTM, Dense, Activation
@@ -74,13 +76,10 @@ def generate_x_dict(x_dict, vocab):
         x_dict[word] = i
 
 
-# def generate_y_dict(y_dict, y):
-#     # Generate a numeric representation for classes.
-#     set_y = set(y)
-
-#     for i, word in enumerate(set_y):
-#         if word not in y_dict:
-#             y_dict[word] = i
+def save_dict(x_dict, domain):
+    # Save dictionary made to the specific domain.
+    output_path = os.path.join(SAVE_MODELS_PATH, domain + "_dict.pkl")
+    pickle.dump(x_dict, open(output_path, 'w'))
 
 
 def preprocess_data(data, key):
@@ -96,6 +95,7 @@ def preprocess_data(data, key):
     # Check how many different state exist.
     vocab = list(set([st_i for seq_st in x for st_i in seq_st]))
     generate_x_dict(x_dict, vocab)
+    save_dict(x_dict, key)
     
     # Get the biggest sequence of states.
     max_len = len(max(x, key=len))
@@ -111,16 +111,6 @@ def preprocess_data(data, key):
             new_seq_st = new_seq_st + ((max_len - len(new_seq_st)) * [0])
 
         new_x.append(new_seq_st)
-
-    # Generate a dict for representing y states.
-    # generate_y_dict(y_dict, y)
-
-    # for y_i in y:
-    #     # Convert each state into its new representation.
-    #     new_y.append(y_dict[y_i])
-
-    # Turn everything one hot encoding for softmax classification.
-    # new_y = to_categorical(new_y, num_classes=len(set(new_y)))
 
     X_train, X_test, y_train, y_test = train_test_split(new_x, y, test_size=0.2, random_state=42)
 
@@ -156,7 +146,7 @@ if __name__ == "__main__":
         X_train, X_test, y_train, y_test, vocab, max_len = preprocess_data(data_dict[key], key)
         model = seq2one_model(vocab, max_len)
 
-        save_model_path = 'models/' + key + '_model.h5' # Set the path to save the best model.
+        save_model_path = os.path.join(SAVE_MODELS_PATH, key + '_model.h5') # Set the path to save the best model.
 
         train_model(model, X_train, y_train, save_model_path)
         test_model(model, X_test, y_test, save_model_path)

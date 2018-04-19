@@ -5,7 +5,7 @@ import sys
 #Constants.
 DATA_PATH = '../lstm_dataset'
 ST_SIZE = 36 # Set the flatten state length.
-
+SAVE_MODELS_PATH = 'models'
 
 def read_dataset(file_path):
     # Read and structure data for training.

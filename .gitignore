@@ -102,3 +102,6 @@ ENV/
 
 # Keras weights
 *.h5
+
+# Pickle files
+*.pkl

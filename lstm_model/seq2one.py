@@ -40,7 +40,7 @@ def seq2one_model(vocab, max_len):
     model.compile(loss='binary_crossentropy',
             optimizer='rmsprop',
             metrics=['accuracy'])
-    print model.summary()
+    print(model.summary())
     return model
 
 

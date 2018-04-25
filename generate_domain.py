@@ -524,10 +524,13 @@ def plan_return_bin(network_folder,path_domain, path_dir, path_output='out1', pd
     p_traces = percentage_slice(traces, float(obs)/100.0)
     sequence_line = ''
     for state in transitions:
-        sequence_line += str(state) 
-        sequence_line += ';'
+        if type(state) == np.ndarray:
+            sequence_line += str(state.tolist())     
+        else:
+            sequence_line += str(state) 
         last_state = str(state)
-    sequence_line += '@' + str(goal)
+        sequence_line += ';'
+    sequence_line += '@' + last_state
     print(sequence_line)
 
 #setup_complete_test('mnist01')

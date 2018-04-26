@@ -1,21 +1,22 @@
 # coding: utf-8
 import os
+import sys
 import random
 import pickle
+import argparse
 import numpy as np
 from utils import *
-from copy import deepcopy
-from keras.layers import Embedding, LSTM, Dense, Activation
-from keras.models import Sequential, load_model
 from keras.utils import to_categorical
-from keras.callbacks import EarlyStopping
-from keras.callbacks import ModelCheckpoint
 from keras.preprocessing.text import one_hot
+from keras.models import Sequential, load_model
 from sklearn.model_selection import train_test_split
+from keras.callbacks import EarlyStopping, ModelCheckpoint
+from keras.layers import Embedding, LSTM, Dense, Activation
 
 random.seed(12)
 
 
+# Set the gpu to use.
 def _start(gpu):
     import os
     import tensorflow as tf
@@ -46,10 +47,10 @@ def seq2one_model(vocab, max_len):
     return model
 
 
-def read_data():
+def read_data(data_path):
 
     # Get files from path.
-    files = os.listdir(DATA_PATH)
+    files = os.listdir(data_path)
 
     # Set a dictionary to save data divided by domain.
     data_dict = dict()
@@ -62,7 +63,7 @@ def read_data():
         filename, _ = os.path.splitext(file)
 
         # Get correct path to file.
-        file_path = os.path.join(DATA_PATH, file)
+        file_path = os.path.join(data_path, file)
             
         # Create structure.
         data_dict[filename] = read_dataset(file_path)
@@ -135,22 +136,34 @@ def evaluate_model(model, x, y, saved_model):
     print('Test loss / test accuracy = {:.4f} / {:.4f}'.format(loss, acc))
 
 
-def test_model(saved_model, dict_path, len_path, data):
+def hamming_sum(s0, s1):                                                                                       
+    if len(s0) != len(s1):
+        raise ValueError()
+    return sum(c0 != c1 for (c0, c1) in zip(s0, s1))
+
+
+def test_model(saved_model, dict_path, len_path, data_path):
     # TODO: Save the output to a file.
     model = load_model(saved_model)
     x_dict = pickle.load(open(dict_path, 'r'))
     max_len = pickle.load(open(len_path, 'r'))
 
-    for states in data:
+    X, y = read_dataset(data_path)
+
+    for ind, states in enumerate(X):
         seq = np.zeros((max_len))
         for i, state in enumerate(states):
+            if i >= max_len:
+                continue
             seq[i] = x_dict.get(state, -1)
-        print np.round(model.predict(seq.reshape(1, max_len), verbose=1))
+        pred = np.round(model.predict(seq.reshape(1, max_len), verbose=1))
+        print(pred)
+        print("Hamming Distance: %d" % hamming_sum(y[ind], pred[0].tolist()))
 
 
-def train():
+def train(data_path):
 
-    data_dict = read_data()
+    data_dict = read_data(data_path)
 
     print("Dictionary ready, checking keys: {}".format(data_dict.keys()))
 
@@ -166,7 +179,40 @@ def train():
         evaluate_model(model, X_test, y_test, save_model_path)
 
 if __name__ == "__main__":
-    # TODO: Use arguments to start the processing.
-    # train()
+    
+    parser = argparse.ArgumentParser(description="Train/Test LSTM to recognize goals given observations.")
+    parser.add_argument('action', metavar='mode', type=str, help="Either 'train' or 'test'")
+    parser.add_argument('data_path', metavar='data', type=str, help="Path to file containing training or testing samples.")
+    parser.add_argument('--model_path', help="Path to a .h5 saved model.")
+    parser.add_argument('--model_dict', help="Path to the model corresponding dict. It has a name like this: <domain_name>_dict.pkl")
+    parser.add_argument('--model_max_len', help="Path to the model corresponding max number of state sequences. It has a name like this: <domain_name>_max_len.pkl")
 
-    test_model('models/lotwisted_model.h5', 'models/lotwisted_dict.pkl', 'models/lotwisted_max_len.pkl', [['010011010100110110000010010011100100', '101110011010111101110000110110100100']])
+    args = parser.parse_args()
+
+    if not os.path.exists(args.data_path):           
+        print("Please! Provide a valid data path.")
+
+    if args.action == 'train':
+
+        train(args.data_path)
+
+    elif args.action == 'test':
+
+        if os.path.exists(args.model_path):
+
+            if os.path.exists(args.model_dict):
+
+                if os.path.exists(args.model_max_len):
+
+                    test_model(args.model_path, args.model_dict, args.model_max_len, args.data_path)
+                else:
+                    print("File for model max len doesn't exist.")
+            else:
+                print("File for model dict doesn't exist.")
+        else:
+            print("File for model path doesn't exist.")
+    else:
+        print("Please! Inform if you want to either train or test LSTM.")
+
+    # [1 0 1 0 1 1 1 1 0 1 1 0 1 0 1 1 1 1 0 1 0 0 1 0 1 1 1 1 0 1 0 1 0 0 0 1]
+    # [0, 0, 0, 1, 1, 0, 1, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 0, 1, 0, 1, 1, 0, 0, 0, 0]

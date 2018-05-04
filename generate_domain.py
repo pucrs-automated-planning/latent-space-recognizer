@@ -492,7 +492,7 @@ def set_up_pgr(network_folder,path_domain, path_dir, path_output='out1', pddl_ac
     export_trace_obs(p_traces, path_output + '/obs.dat')
     #transitions[0] = transitions[0].tolist()
     #print(transitions)
-    export_hypothesis(transitions, path_output + '/obs2.dat')
+    export_hypothesis(percentage_slice(transitions, float(obs)/100.0), path_output + '/obs2.dat')
     export_hypothesis(candidate_goals, path=path_output + '/' + 'hyps.dat')
     export_hypothesis([goal], path=path_output+ '/' +'real_hyp.dat')
 
@@ -637,8 +637,10 @@ def generate_subsets(data, _min):
 #Generate LSTM dataset from GR problems in the output folder. It removes the problems themselves to preserve fairness during comparison
 def generate_lstm_dataset(directory='output/', size=36):
     list_domain = ['hanoi', 'mnist', 'lodigital', 'lotwisted', 'mandrill', 'spider']
+    #list_domain = ['spider']
     domain_dict = dict()
     excluded = dict()
+    uniques = set()
     for domain in list_domain:
         data = open('lstm_dataset/'+domain+'.csv', 'w')
         data.write('')
@@ -651,11 +653,12 @@ def generate_lstm_dataset(directory='output/', size=36):
             sequence_line = ''
             if domain in dirpath:
                 sequence_line = ''
-                print('Working on: ', dirpath)
+                #print('Working on: ', dirpath)
                 change_obs = False
                 trace = open(dirpath+'/obs.dat', 'r')
                 goal = open(dirpath+'/real_hyp.dat', 'r')
                 goal_str =  str(parse_pddl_state(goal.readline(),size,True))
+                uniques.add(trace)
                 for line in trace:
                     if 'a' in line: 
                         change_obs = True
@@ -668,8 +671,17 @@ def generate_lstm_dataset(directory='output/', size=36):
                     states = []
                     for line in trace:
                         states.append(str(parse_pddl_state(line,size, True)))
+                    for state in states:
+                        sequence_line += str(state) 
+                        sequence_line += ';'
+                    goal = open(dirpath+'/real_hyp.dat', 'r')
+                    sequence_line += '@' + goal_str
+                    if sequence_line in excluded[domain]:
+                        print('Have it 100', dirpath)
+                    excluded[domain].add(str(sequence_line))
+                    
                     subsets = generate_subsets(states, 3)
-                    print('Creatated ', len(subsets), 'subsets')
+                    #print('Creatated ', len(subsets), 'subsets')
                     for sub in subsets:
                         sequence_line = ''
                         for state in sub:
@@ -679,7 +691,6 @@ def generate_lstm_dataset(directory='output/', size=36):
                         sequence_line += '@' + goal_str
                         domain_dict[domain].add(sequence_line)
                     obs_set =  [70,50,30,10]
-                    print(goal_str)
                     for obs in obs_set:
                         sequence_line = ''
                         for i in range(200):
@@ -690,19 +701,23 @@ def generate_lstm_dataset(directory='output/', size=36):
                                 sequence_line += ';'
                             sequence_line += '@' + goal_str
                             if sequence_line not in domain_dict[domain]:
-                                print('new entry on: ', i, dirpath, 'obs: ', obs)
+                                #print('new entry on: ', i, dirpath, 'obs: ', obs)
                                 domain_dict[domain].add(str(sequence_line))
                 else:
+                    sequence_line = ''
                     states = []
                     for line in trace:
+                        #print(line)
                         states.append(str(parse_pddl_state(line,size, True)))
-                    excluded[domain].add(str(states))
-                    for state in sub:
+                    for state in states:
                         sequence_line += str(state) 
                         sequence_line += ';'
                     goal = open(dirpath+'/real_hyp.dat', 'r')
                     sequence_line += '@' + goal_str
-                    excluded[domain].add(sequence_line)
+                    #print('Sequence added for excluding: ', sequence_line, ' in: ', dirpath)
+                    if sequence_line in excluded[domain]:
+                        print('Have it')
+                    excluded[domain].add(str(sequence_line))
 
     removed = 0
     for domain in list_domain:
@@ -716,11 +731,19 @@ def generate_lstm_dataset(directory='output/', size=36):
         data.close()
     print('Removed:', removed)
     for domain in list_domain:
+        print('Domain size: ', len(domain_dict[domain]), 'domain: ', domain)
         data = open('lstm_dataset/'+domain+'.csv', 'a')
         for d in domain_dict[domain]:
             data.write(d + '\n')
         data.close()
+    print(len(uniques))
  
+def encode_img(network_folder, path_dir):
+    enc_dec = EncoderDecoder(network_folder)
+    init = enc_dec.encode(path_dir+'/init.png', True)
+    goal = enc_dec.encode(path_dir+'/goal.png', True)
+    print(init)
+    print(goal)
 
 
 
@@ -735,7 +758,9 @@ if __name__ == '__main__':
     elif sys.argv[1] == 'lstm':
         generate_lstm_dataset(*sys.argv[2:])
     elif sys.argv[1] == 'plan':
-        plan_return_bin(*sys.argv[2:])        
+        plan_return_bin(*sys.argv[2:])
+    elif sys.argv[1] == 'encode':
+        encode_img(*sys.argv[2:])       
     #if len(sys.argv) < 3:
      #   sys.exit("{} [networkdir] [problemdir]".format(sys.argv[0]))
     #main(*sys.argv[1:])

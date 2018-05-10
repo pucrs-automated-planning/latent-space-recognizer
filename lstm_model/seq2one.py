@@ -142,11 +142,13 @@ def hamming_sum(s0, s1):
     return sum(c0 != c1 for (c0, c1) in zip(s0, s1))
 
 
-def test_model(saved_model, dict_path, len_path, data_path):
+def predict(saved_model, dict_path, len_path, data_path):
     # TODO: Save the output to a file.
     model = load_model(saved_model)
     x_dict = pickle.load(open(dict_path, 'r'))
     max_len = pickle.load(open(len_path, 'r'))
+
+    ham_count = 0
 
     X, y = read_dataset(data_path)
 
@@ -157,9 +159,13 @@ def test_model(saved_model, dict_path, len_path, data_path):
                 continue
             seq[i] = x_dict.get(state, -1)
         pred = np.round(model.predict(seq.reshape(1, max_len), verbose=1))
-        print(pred)
-        print("Hamming Distance: %d" % hamming_sum(y[ind], pred[0].tolist()))
-
+        # print(pred)
+        # print(y[ind])
+        ham_dist = hamming_sum(y[ind], pred[0].tolist())
+        if ham_dist == 0:
+            ham_count += 1
+        print("Hamming Distance: %d" % ham_dist)
+    print("Accuracy: ", ham_count/float(len(X)))
 
 def train(data_path):
 
@@ -178,10 +184,34 @@ def train(data_path):
         train_model(model, X_train, y_train, save_model_path)
         evaluate_model(model, X_test, y_test, save_model_path)
 
+
+def evaluate(saved_model, dict_path, len_path, data_path):
+
+    model = load_model(saved_model)
+    x_dict = pickle.load(open(dict_path, 'r'))
+    max_len = pickle.load(open(len_path, 'r'))
+
+    X, y_test = read_dataset(data_path)
+
+    X_test = np.zeros((len(X), max_len))
+
+    for ind, states in enumerate(X):
+        seq = np.zeros((max_len))
+        for i, state in enumerate(states):
+            if i >= max_len:
+                continue
+            seq[i] = x_dict.get(state, -1)
+        X_test[ind] = seq
+
+    loss, acc = model.evaluate(x=np.array(X_test), y=np.array(y_test), batch_size=2, verbose=1)
+
+    print('Test loss / test accuracy = {:.4f} / {:.4f}'.format(loss, acc))
+
+
 if __name__ == "__main__":
     
     parser = argparse.ArgumentParser(description="Train/Test LSTM to recognize goals given observations.")
-    parser.add_argument('action', metavar='mode', type=str, help="Either 'train' or 'test'")
+    parser.add_argument('action', metavar='mode', type=str, help="Either 'train', 'predict' or 'evaluate'")
     parser.add_argument('data_path', metavar='data', type=str, help="Path to file containing training or testing samples.")
     parser.add_argument('--model_path', help="Path to a .h5 saved model.")
     parser.add_argument('--model_dict', help="Path to the model corresponding dict. It has a name like this: <domain_name>_dict.pkl")
@@ -193,26 +223,23 @@ if __name__ == "__main__":
         print("Please! Provide a valid data path.")
 
     if args.action == 'train':
-
         train(args.data_path)
 
-    elif args.action == 'test':
-
+    else:
         if os.path.exists(args.model_path):
 
             if os.path.exists(args.model_dict):
 
                 if os.path.exists(args.model_max_len):
-
-                    test_model(args.model_path, args.model_dict, args.model_max_len, args.data_path)
+                    if args.action == 'predict':
+                        predict(args.model_path, args.model_dict, args.model_max_len, args.data_path)
+                    elif args.action == 'evaluate':
+                        evaluate(args.model_path, args.model_dict, args.model_max_len, args.data_path)
+                    else:
+                        print("Please! Inform if you want to either train, predict or evaluate LSTM.")
                 else:
                     print("File for model max len doesn't exist.")
             else:
                 print("File for model dict doesn't exist.")
         else:
             print("File for model path doesn't exist.")
-    else:
-        print("Please! Inform if you want to either train or test LSTM.")
-
-    # [1 0 1 0 1 1 1 1 0 1 1 0 1 0 1 1 1 1 0 1 0 0 1 0 1 1 1 1 0 1 0 1 0 0 0 1]
-    # [0, 0, 0, 1, 1, 0, 1, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 0, 1, 0, 1, 1, 0, 0, 0, 0]

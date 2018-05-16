@@ -737,6 +737,64 @@ def generate_lstm_dataset(directory='output/', size=36):
             data.write(d + '\n')
         data.close()
     print(len(uniques))
+
+#Generate LSTM dataset from GR problems in the output folder. It removes the problems themselves to preserve fairness during comparison
+def divide_lstm_dataset(directory='output/', size=36):
+    list_domain = ['mnist', 'lodigital', 'lotwisted', 'mandrill', 'spider']
+    #list_domain = ['spider']
+    list_per = ['10','30','50','70','100']
+    excluded = dict()
+    for domain in list_domain:
+        for per in list_per:
+            data = open('lstm_per_data/'+domain+'_'+per+'.csv', 'w')
+            data.write('')
+            excluded[domain+'_'+per] = set()
+            data.close()
+    for dirpath, dirnames, filenames in os.walk(directory):
+        sequence_line = ''
+        for domain in list_domain:
+            sequence_line = ''
+            if domain in dirpath:
+                sequence_line = ''
+                change_obs = False
+                trace = open(dirpath+'/obs.dat', 'r')
+                goal = open(dirpath+'/real_hyp.dat', 'r')
+                goal_str =  str(parse_pddl_state(goal.readline(),size,True))
+                for line in trace:
+                    if 'a' in line: 
+                        change_obs = True
+                        break
+                    break;
+                if change_obs:
+                    trace = open(dirpath+'/obs2.dat', 'r')
+                states = []
+                for line in trace:
+                    states.append(str(parse_pddl_state(line,size, True)))
+                for state in states:
+                    sequence_line += str(state) 
+                    sequence_line += ';'
+                goal = open(dirpath+'/real_hyp.dat', 'r')
+                sequence_line += '@' + goal_str
+                if '100' in dirpath:
+                    excluded[domain+'_100'].add(str(sequence_line))
+                elif '70':
+                    excluded[domain+'_70'].add(str(sequence_line))
+                elif '50':
+                    excluded[domain+'_50'].add(str(sequence_line))
+                elif '30':
+                    excluded[domain+'_30'].add(str(sequence_line))
+                elif '10':
+                    excluded[domain+'_10'].add(str(sequence_line))
+                    
+
+    removed = 0
+    for domain in list_domain:
+        for per in list_per:
+            data = open('lstm_per_data/'+domain+'_'+per+'.csv', 'w')
+            for e in excluded[domain+'_'+per]:
+                data.write(e + '\n')
+            data.close()
+    print('Done!')
  
 def encode_img(network_folder, path_dir):
     enc_dec = EncoderDecoder(network_folder)
@@ -757,6 +815,8 @@ if __name__ == '__main__':
         set_up_online_pgr(*sys.argv[2:])
     elif sys.argv[1] == 'lstm':
         generate_lstm_dataset(*sys.argv[2:])
+    elif sys.argv[1] == 'divide_lstm':
+        divide_lstm_dataset(*sys.argv[2:])
     elif sys.argv[1] == 'plan':
         plan_return_bin(*sys.argv[2:])
     elif sys.argv[1] == 'encode':

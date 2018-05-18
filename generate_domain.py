@@ -741,14 +741,14 @@ def generate_lstm_dataset(directory='output/', size=36):
 #Generate LSTM dataset from GR problems in the output folder. It removes the problems themselves to preserve fairness during comparison
 def divide_lstm_dataset(directory='output/', size=36):
     list_domain = ['mnist', 'lodigital', 'lotwisted', 'mandrill', 'spider']
-    #list_domain = ['spider']
+    #list_domain = ['mnist']
     list_per = ['10','30','50','70','100']
     excluded = dict()
     for domain in list_domain:
         for per in list_per:
-            data = open('lstm_per_data/'+domain+'_'+per+'.csv', 'w')
+            data = open('lstm_per_data/missing_goal/'+domain+'_'+per+'.csv', 'w')
             data.write('')
-            excluded[domain+'_'+per] = set()
+            excluded[domain+'_'+per] = list()
             data.close()
     for dirpath, dirnames, filenames in os.walk(directory):
         sequence_line = ''
@@ -776,21 +776,22 @@ def divide_lstm_dataset(directory='output/', size=36):
                 goal = open(dirpath+'/real_hyp.dat', 'r')
                 sequence_line += '@' + goal_str
                 if '100' in dirpath:
-                    excluded[domain+'_100'].add(str(sequence_line))
-                elif '70':
-                    excluded[domain+'_70'].add(str(sequence_line))
-                elif '50':
-                    excluded[domain+'_50'].add(str(sequence_line))
-                elif '30':
-                    excluded[domain+'_30'].add(str(sequence_line))
-                elif '10':
-                    excluded[domain+'_10'].add(str(sequence_line))
+                    excluded[domain+'_100'].append(str(sequence_line))
+                elif '70' in dirpath:
+                    print(dirpath)
+                    excluded[domain+'_70'].append(str(sequence_line))
+                elif '50' in dirpath:
+                    excluded[domain+'_50'].append(str(sequence_line))
+                elif '30' in dirpath:
+                    excluded[domain+'_30'].append(str(sequence_line))
+                elif '10' in dirpath:
+                    excluded[domain+'_10'].append(str(sequence_line))
                     
 
     removed = 0
     for domain in list_domain:
         for per in list_per:
-            data = open('lstm_per_data/'+domain+'_'+per+'.csv', 'w')
+            data = open('lstm_per_data/missing_goal/'+domain+'_'+per+'.csv', 'w')
             for e in excluded[domain+'_'+per]:
                 data.write(e + '\n')
             data.close()

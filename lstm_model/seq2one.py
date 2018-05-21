@@ -173,14 +173,17 @@ def predict(saved_model, dict_path, len_path, data_path, output_path):
     elapsed_time = time.time() - start
     acc = ham_count/float(len(X))
 
-    output_result(output_path, len(X), ham_count, acc, elapsed_time)
+    output_result(output_path, len(X), acc, elapsed_time, ham_count=ham_count)
 
 
-def output_result(output_path, X, ham_count, acc, e_time):
+def output_result(output_path, X, acc, e_time, ham_count=0):
 
     with open(output_path, 'w') as w_file:
 
-        text = "Accuracy: %.2f\n\nTotal number of examples:\t%d\nNumber of goals corrected classified:\t%d\n\nElapsed time (seconds): %.3f" % (acc, X, ham_count, e_time)
+        if ham_count:
+            text = "Accuracy: %.2f\n\nTotal number of examples:\t%d\nNumber of goals corrected classified:\t%d\n\nElapsed time (seconds): %.3f" % (acc, X, ham_count, e_time)
+        else:
+            text = "Accuracy: %.2f\n\nElapsed time (seconds): %.3f" % (acc, e_time)
         w_file.write(text)
 
 
@@ -214,6 +217,7 @@ def evaluate(saved_model, dict_path, len_path, data_path, output_path):
 
     X_test = np.zeros((len(X), max_len))
 
+    start = time.time()
     for ind, states in enumerate(X):
         seq = np.zeros((max_len))
         for i, state in enumerate(states):
@@ -224,7 +228,11 @@ def evaluate(saved_model, dict_path, len_path, data_path, output_path):
 
     loss, acc = model.evaluate(x=np.array(X_test), y=np.array(y_test), batch_size=2, verbose=1)
 
+    elapsed_time = time.time() - start
+
     print('Test loss / test accuracy = {:.4f} / {:.4f}'.format(loss, acc))
+
+    output_result(output_path, len(X), acc, elapsed_time)
 
 
 def create_filename(data_path, output_path):

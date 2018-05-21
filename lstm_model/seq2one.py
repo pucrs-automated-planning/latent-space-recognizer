@@ -1,6 +1,7 @@
 # coding: utf-8
 import os
 import sys
+import time
 import random
 import pickle
 import argparse
@@ -142,8 +143,10 @@ def hamming_sum(s0, s1):
     return sum(c0 != c1 for (c0, c1) in zip(s0, s1))
 
 
-def predict(saved_model, dict_path, len_path, data_path):
+def predict(saved_model, dict_path, len_path, data_path, output_path):
     # TODO: Save the output to a file.
+    output_path = create_filename(data_path, output_path)
+
     model = load_model(saved_model)
     x_dict = pickle.load(open(dict_path, 'r'))
     max_len = pickle.load(open(len_path, 'r'))
@@ -152,6 +155,8 @@ def predict(saved_model, dict_path, len_path, data_path):
 
     X, y = read_dataset(data_path)
 
+    start = time.time()
+
     for ind, states in enumerate(X):
         seq = np.zeros((max_len))
         for i, state in enumerate(states):
@@ -159,13 +164,25 @@ def predict(saved_model, dict_path, len_path, data_path):
                 continue
             seq[i] = x_dict.get(state, -1)
         pred = np.round(model.predict(seq.reshape(1, max_len), verbose=1))
-        # print(pred)
-        # print(y[ind])
+
         ham_dist = hamming_sum(y[ind], pred[0].tolist())
         if ham_dist == 0:
             ham_count += 1
         print("Hamming Distance: %d" % ham_dist)
-    print("Accuracy: ", ham_count/float(len(X)))
+
+    elapsed_time = time.time() - start
+    acc = ham_count/float(len(X))
+
+    output_result(output_path, len(X), ham_count, acc, elapsed_time)
+
+
+def output_result(output_path, X, ham_count, acc, e_time):
+
+    with open(output_path, 'w') as w_file:
+
+        text = "Accuracy: %.2f\n\nTotal number of examples:\t%d\nNumber of goals corrected classified:\t%d\n\nElapsed time (seconds): %.3f" % (acc, X, ham_count, e_time)
+        w_file.write(text)
+
 
 def train(data_path):
 
@@ -185,7 +202,9 @@ def train(data_path):
         evaluate_model(model, X_test, y_test, save_model_path)
 
 
-def evaluate(saved_model, dict_path, len_path, data_path):
+def evaluate(saved_model, dict_path, len_path, data_path, output_path):
+
+    output_path = create_filename(data_path, output_path)
 
     model = load_model(saved_model)
     x_dict = pickle.load(open(dict_path, 'r'))
@@ -208,6 +227,18 @@ def evaluate(saved_model, dict_path, len_path, data_path):
     print('Test loss / test accuracy = {:.4f} / {:.4f}'.format(loss, acc))
 
 
+def create_filename(data_path, output_path):
+
+    path, extension = os.path.splitext(data_path)
+    data_filename = path.split('/')[-1]
+    data_filename = data_filename + '.txt'
+
+    if output_path:
+        return os.path.join(output_path, data_filename)
+    else:
+        path_head = '/'.join(path.split('/')[:-1])
+        return os.path.join(path_head, data_filename)
+
 if __name__ == "__main__":
     
     parser = argparse.ArgumentParser(description="Train/Test LSTM to recognize goals given observations.")
@@ -216,6 +247,7 @@ if __name__ == "__main__":
     parser.add_argument('--model_path', help="Path to a .h5 saved model.")
     parser.add_argument('--model_dict', help="Path to the model corresponding dict. It has a name like this: <domain_name>_dict.pkl")
     parser.add_argument('--model_max_len', help="Path to the model corresponding max number of state sequences. It has a name like this: <domain_name>_max_len.pkl")
+    parser.add_argument('--output_filepath', help="Path to a folder where the the output file shall be placed, we automatically create an output file from the data file name.")
 
     args = parser.parse_args()
 
@@ -226,15 +258,21 @@ if __name__ == "__main__":
         train(args.data_path)
 
     else:
+        
+        if not args.output_filepath:
+            output_path = False
+        else:
+            output_path = args.output_filepath
+
         if os.path.exists(args.model_path):
 
             if os.path.exists(args.model_dict):
 
                 if os.path.exists(args.model_max_len):
                     if args.action == 'predict':
-                        predict(args.model_path, args.model_dict, args.model_max_len, args.data_path)
+                        predict(args.model_path, args.model_dict, args.model_max_len, args.data_path, output_path)
                     elif args.action == 'evaluate':
-                        evaluate(args.model_path, args.model_dict, args.model_max_len, args.data_path)
+                        evaluate(args.model_path, args.model_dict, args.model_max_len, args.data_path, output_path)
                     else:
                         print("Please! Inform if you want to either train, predict or evaluate LSTM.")
                 else:

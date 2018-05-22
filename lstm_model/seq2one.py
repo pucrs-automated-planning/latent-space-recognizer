@@ -193,6 +193,8 @@ def train(data_path):
 
     print("Dictionary ready, checking keys: {}".format(data_dict.keys()))
 
+    output_times = open('training_times.txt', 'w')
+
     for key in data_dict:
         print("Processing domain: %s" % key)
         print("This domain has %d samples and - distinct classes." % len(data_dict[key][0]))#, len(set(data_dict[key][1]))))
@@ -201,9 +203,13 @@ def train(data_path):
 
         save_model_path = os.path.join(SAVE_MODELS_PATH, key + '_model.h5') # Set the path to save the best model.
 
+        start = time.time()
         train_model(model, X_train, y_train, save_model_path)
+        e_time = time.time() - start
+        output_times.write("%s domain\nElapsed time: %.3f\n\n" % (key, e_time))
         evaluate_model(model, X_test, y_test, save_model_path)
 
+    output_times.close()
 
 def evaluate(saved_model, dict_path, len_path, data_path, output_path):
 
@@ -263,7 +269,10 @@ if __name__ == "__main__":
         print("Please! Provide a valid data path.")
 
     if args.action == 'train':
+        start = time.time()
         train(args.data_path)
+        e_time = time.time() - start
+        print "Training time in seconds: %.3f" % e_time
 
     else:
         

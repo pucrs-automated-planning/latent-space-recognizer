@@ -1,0 +1,6 @@
+Accuracy: 0.90
+
+Total number of examples:	30
+Number of goals corrected classified:	27
+
+Elapsed time (seconds): 0.599

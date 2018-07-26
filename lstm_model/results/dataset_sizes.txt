@@ -1,0 +1,6 @@
+1552 ../../lstm_dataset/train/hanoi.csv
+230 ../../lstm_dataset/train/lodigital.csv
+224 ../../lstm_dataset/train/lotwisted.csv
+2520 ../../lstm_dataset/train/mandrill.csv
+1427 ../../lstm_dataset/train/mnist.csv
+2216 ../../lstm_dataset/train/spider.csv

@@ -1,0 +1,18 @@
+lotwisted domain
+Elapsed time: 22.571
+
+mandrill domain
+Elapsed time: 294.585
+
+hanoi domain
+Elapsed time: 64.334
+
+lodigital domain
+Elapsed time: 14.875
+
+spider domain
+Elapsed time: 211.424
+
+mnist domain
+Elapsed time: 333.254
+

@@ -6,6 +6,8 @@
 import pygame, sys, random
 from pygame.locals import *
 
+import time
+import generate_domain as gd
 # Create the constants (go ahead and experiment with different values)
 BOARDWIDTH = 3  # number of columns in the board
 BOARDHEIGHT = 3 # number of rows in the board
@@ -39,6 +41,11 @@ UP = 'up'
 DOWN = 'down'
 LEFT = 'left'
 RIGHT = 'right'
+
+
+#=======================
+# N-Puzzle setup
+#=======================
 
 def main():
     global FPSCLOCK, DISPLAYSURF, BASICFONT, RESET_SURF, RESET_RECT, NEW_SURF, NEW_RECT, SOLVE_SURF, SOLVE_RECT
@@ -327,6 +334,24 @@ def resetAnimation(board, allMoves):
         slideAnimation(board, oppositeMove, '', animationSpeed=int(TILESIZE / 2))
         makeMove(board, oppositeMove)
 
+#=======================
+# Goal recognition setup 
+#=======================
+
+def set_candidate_goals():
+    candidates = []
+    for x in range(1,7):
+        candidates.append('demo/c' + str(x) +'.png' )
+    return candidates
+
+def initialize_demo():
+    global CANDIDATE_GOALS
+    CANDIDATE_GOALS = set_candidate_goals()
+    network = gd.set_networks('samples/puzzle_mnist_3_3_36_20000_conv/')
+    curr = time.time()    
+    gd.set_grp('demo/init.png', 'demo/goal.png', CANDIDATE_GOALS, network, 'domains/mnist_domain.pddl')
+    print(time.time() - curr)
+    print('networks are ready')
 
 if __name__ == '__main__':
-    main()
+    initialize_demo()

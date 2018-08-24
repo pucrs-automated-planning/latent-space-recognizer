@@ -804,6 +804,24 @@ def encode_img(network_folder, path_dir):
     print(init)
     print(goal)
 
+def set_networks(network_folder):
+    return EncoderDecoder(network_folder)
+
+#Paths are expected here
+def set_grp(init, goal, candidates, enc_dec, path_domain):
+    init_enc = enc_dec.encode(init, True)
+    goal_enc = enc_dec.encode(goal, True)
+    candidate_goals = []
+    for g in candidates:
+        candidate_goals.append(enc_dec.encode(g, True))
+
+    export_problem_pgr(init,'demo/')
+    call(['cp', path_domain, 'demo'+ '/' +'domain.pddl'])
+    export_hypothesis(candidate_goals, path='demo' + '/' + 'hyps.dat')
+    export_hypothesis([goal], path='demo'+ '/' +'real_hyp.dat')
+    
+
+
 
 
 if __name__ == '__main__':

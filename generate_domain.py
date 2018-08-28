@@ -811,14 +811,15 @@ def set_networks(network_folder):
 def set_grp(init, goal, candidates, enc_dec, path_domain):
     init_enc = enc_dec.encode(init, True)
     goal_enc = enc_dec.encode(goal, True)
+    print(init_enc)
     candidate_goals = []
     for g in candidates:
         candidate_goals.append(enc_dec.encode(g, True))
 
-    export_problem_pgr(init,'demo/')
+    export_problem_pgr(init_enc,'demo/')
     call(['cp', path_domain, 'demo'+ '/' +'domain.pddl'])
     export_hypothesis(candidate_goals, path='demo' + '/' + 'hyps.dat')
-    export_hypothesis([goal], path='demo'+ '/' +'real_hyp.dat')
+    export_hypothesis([goal_enc], path='demo'+ '/' +'real_hyp.dat')
     
 
 

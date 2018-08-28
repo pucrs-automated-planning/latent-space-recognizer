@@ -40,12 +40,14 @@ def add_obs(obs_image, network, output):
 
 
 def call_recognizer(domain, problem, hyp, obs, real_hyp):
-    call(['java -jar goalrecognizer1.1.jar -uniqueness', domain, problem, hyp, obs, real_hyp])
+    call(['java', '-jar', 'goalrecognizer1.1.jar' ,'-uniqueness', domain, problem, hyp, obs, real_hyp, '5'])
+    #call(['java -jar goalrecognizer1.1.jar -uniqueness', domain, problem, hyp, obs, real_hyp])
 
 
 def main_loop():
     while 1:
         add_obs('demo/init.png', nets, 'demo/obs.dat')
+        call_recognizer('demo/domain.pddl', 'demo/template.pddl', 'demo/hyps.dat', 'demo/obs.dat','demo/real_hyp.dat',)
         time.sleep(0.1)
         sys.exit()
 

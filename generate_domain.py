@@ -33,13 +33,9 @@ def _xnor(self, other):
     return [sxnor(se,so) for se,so in zip(self,other)]
 
 def sxnor(se,so):
-    if (se == 0) and (so == 0):
-        return -1
-    if (se == 1) and (so == 1):
-        return 1
-    if (se == -1) and (so == -1):
-        return -1
-    return 0 
+    if se == so:
+        return 1 if se == 1 else -1
+    return 0
 
 def _act(se,so):
     if so != -1: return se | so

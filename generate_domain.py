@@ -68,18 +68,16 @@ def generate_action(state1, state2):
 def generate_pddl_action(parameter, pre_cond, effect, action_name):
     action = '(:action ' + str(action_name) + '\n'
     action += '    :parameters ()\n'
-    action += '    :precondition (and' + '\n'
+    action += '    :precondition (and\n'
     for pre in range(len(pre_cond)):
-        if pre_cond[pre] == 1:  action+='        ('+ 'p' + str(pre) +')' +'\n'
-        if pre_cond[pre] == -1:  action+='        (not ('+ 'p' + str(pre) +'))' +'\n'
-    action  += '    )' +'\n'
-    action += '    :effect(and' + '\n'
+        if pre_cond[pre] == 1: action += '        (p' + str(pre) +')\n'
+        elif pre_cond[pre] == -1: action += '        (not (p' + str(pre) +'))\n'
+    action += '    )\n    :effect(and\n'
     for eff in range(len(effect)):
         if not effect[eff]: continue
-        if effect[eff] == 1: action += '        ('+ 'p' + str(eff) + ')' +'\n'
-        if effect[eff] == -1: action += '        (not ('+ 'p' + str(eff) + '))' +'\n'
-    action += '    )' +'\n'
-    action += ')\n'
+        elif effect[eff] == 1: action += '        (p' + str(eff) + ')\n'
+        elif effect[eff] == -1: action += '        (not (p' + str(eff) + '))\n'
+    action += '    )\n)\n'
     return action
 
 

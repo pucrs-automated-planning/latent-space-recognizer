@@ -98,19 +98,16 @@ def generate_all_actions(list_actions):
 #============ PDDL OUTPUT ==================
 
 def export_pddl(pruned, path, N):
-    txt = '(define (domain generated-domain) \n'
-    txt += '    (:requirements :strips :negative-preconditions) \n'
-    txt += '    (:predicates \n'
-    for i in range(N):
-      txt += '        (p' +str(i) + ') \n'
-    txt += '    )\n'
-    for action in generate_all_actions_pddl(pruned):
-      txt += action
-    txt += ')'
-    data = open(path, 'w')
-    data.write(txt)
-
-
+    with open(path, 'w') as output_file:
+        output_file.write('(define (domain generated-domain)\n')
+        output_file.write('    (:requirements :strips :negative-preconditions)\n')
+        output_file.write('    (:predicates\n')
+        for i in range(N):
+            output_file.write('        (p' + str(i) + ')\n')
+        output_file.write('    )\n')
+        for action in generate_all_actions_pddl(pruned):
+            output_file.write(action)
+        output_file.write(')')
 
 def generate_problem(init_state, goal_state):
     txt = '(define (problem pb1)\n'

@@ -38,8 +38,7 @@ def sxnor(se,so):
     return 0
 
 def _act(se,so):
-    if so != -1: return se | so
-    else: return 0
+    return se | so if so != -1 else 0
 
 def exec_action(state,eff):
     return [_act(se,so) for se,so in zip(state,eff)]

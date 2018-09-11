@@ -23,10 +23,10 @@ ONLINE_REQ_JAR = ''
 
 #============ LOGIC OPERATORS ==============
 def _or(self,other):
-        return [se | so for se,so in zip(self,other)]   
+    return [se | so for se,so in zip(self,other)]
 
 def _xor(self,other):
-        return [se ^ so for se,so in zip(self,other)]
+    return [se ^ so for se,so in zip(self,other)]
 
 #A special xnor that returns -1 if both are 0
 def _xnor(self, other):

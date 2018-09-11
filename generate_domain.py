@@ -66,8 +66,8 @@ def generate_pddl_action(parameter, pre_cond, effect, action_name):
     action += '    :parameters ()\n'
     action += '    :precondition (and\n'
     for pre in range(len(pre_cond)):
-        if pre_cond[pre] == 1: action += '        (p' + str(pre) +')\n'
-        elif pre_cond[pre] == -1: action += '        (not (p' + str(pre) +'))\n'
+        if pre_cond[pre] == 1: action += '        (p' + str(pre) + ')\n'
+        elif pre_cond[pre] == -1: action += '        (not (p' + str(pre) + '))\n'
     action += '    )\n    :effect(and\n'
     for eff in range(len(effect)):
         if not effect[eff]: continue
@@ -78,12 +78,10 @@ def generate_pddl_action(parameter, pre_cond, effect, action_name):
 
 
 def generate_all_actions_pddl(list_actions):
-    actions = []
     counter = 1
     for a in list_actions:
-        actions.append(generate_pddl_action(a.parameters, a.pre_cond, a.effect, 'a'+ str(counter)))
+        yield generate_pddl_action(a.parameters, a.pre_cond, a.effect, 'a' + str(counter))
         counter += 1
-    return actions
 
 
 def generate_all_actions(list_actions):
@@ -99,14 +97,14 @@ def generate_all_actions(list_actions):
 #===========================================
 #============ PDDL OUTPUT ==================
 
-def export_pddl(actions, path, N):
+def export_pddl(pruned, path, N):
     txt = '(define (domain generated-domain) \n'
     txt += '    (:requirements :strips :negative-preconditions) \n'
     txt += '    (:predicates \n'
     for i in range(N):
       txt += '        (p' +str(i) + ') \n'
     txt += '    )\n'
-    for action in actions:
+    for action in generate_all_actions_pddl(pruned):
       txt += action
     txt += ')'
     data = open(path, 'w')
@@ -277,12 +275,11 @@ def export_hypothesis(list_goals, path='hyps.dat'):
 def create_domain(actions_path, path, exp_actions='pddl_actions.csv'):
     transitions = read_csv_actions(actions_path)
     actions = generate_all_actions(transitions)
-    #print( len(actions))
+    #print(len(actions))
     pruned = prune_actions(actions)
-    pddl_actions = generate_all_actions_pddl(pruned)
-    export_pddl(pddl_actions, path, N)
-    export_actions(pruned,exp_actions)
-    return len(transitions), len(actions),len(pruned)
+    export_pddl(pruned, path, N)
+    export_actions(pruned, exp_actions)
+    return len(transitions), len(actions), len(pruned)
 
 
 def generate_DFS_problem(actions, state, steps=5):

@@ -14,7 +14,7 @@ from encode_decode import EncoderDecoder
 from latplan.util.plot import *
 import numpy as np
 #Latent layer size
-#N = 36
+N = 36
 FD_PATH = '../fast_downward/'
 MP_PATH = '../../MauPlanner/'
 SIZE_H = 42

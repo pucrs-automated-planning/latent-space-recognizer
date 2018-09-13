@@ -35,7 +35,11 @@ if __name__ == '__main__':
             
         g = p.generate(np.array(puzzles), height=height, width=width)
 
-        for i, matrx in g:
-            puzzle_name = ''.join(map(str, puzzles[i]))
+        for i in range(g.shape[0]):
+            puzzle_name = [0]*len(numbers)
+            for k, j in enumerate(puzzles[i]):
+                puzzle_name[j] = k
+
+            puzzle_name = ''.join(map(str, puzzle_name))
             puzzle_path = os.path.join(dataset_name, '%s.jpg' % puzzle_name)
-            misc.imsave(puzzle_path, matrx)
+            misc.imsave(puzzle_path, g[i])

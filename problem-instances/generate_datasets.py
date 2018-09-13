@@ -6,7 +6,7 @@ import numpy as np
 import importlib
 from scipy import misc
 from itertools import permutations
-sys.path.append('../../')
+sys.path.append('../')
 
 if __name__ == '__main__':
         
@@ -33,8 +33,9 @@ if __name__ == '__main__':
         for num_order in perm:
             puzzles.append(list(num_order))#np.array(list(num_order)).reshape((1,3*3)))
             
-        for i, puzzle in enumerate(puzzles):
-            g = p.generate(np.array(puzzle).reshape(1,3*3), height=height, width=width)
-            puzzle_name = ''.join(map(str, puzzle))
+        g = p.generate(np.array(puzzles), height=height, width=width)
+
+        for i, matrx in g:
+            puzzle_name = ''.join(map(str, puzzles[i]))
             puzzle_path = os.path.join(dataset_name, '%s.jpg' % puzzle_name)
-            misc.imsave(puzzle_path, g[0])
+            misc.imsave(puzzle_path, matrx)

@@ -1,0 +1,55 @@
+body {
+
+}
+
+.transparent {
+    background-color:rgba(255, 255, 255, 0.90);
+    padding: 32px;
+    margin-bottom: 16px;
+}
+
+.wide {
+    width: 1168px;
+}
+
+html *
+{
+   font-family: "Roboto" !important;
+}
+
+a {
+    color: #0091ff; 
+}
+
+a:link    {
+    /* Applies to all unvisited links */
+    text-decoration:  none;
+    font-weight:      bold;
+    color: #0091ff; 
+} 
+a:visited {
+    /* Applies to all visited links */
+    text-decoration:  none;
+    font-weight:      bold;
+    color: #0091ff; 
+} 
+a:hover   {
+    /* Applies to links under the pointer */
+    text-decoration:  none;
+    font-weight:      bold;
+    color: #0091ff; 
+}
+
+.content {
+    max-width: 1280px;
+    margin: auto;
+}
+
+.clear {
+    clear: both;
+}
+
+.error {
+    font-size: 0.9em;
+    color: rgb(244, 67, 54);
+}

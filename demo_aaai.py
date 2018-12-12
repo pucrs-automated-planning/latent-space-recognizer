@@ -3,7 +3,7 @@
 # http://inventwithpython.com/pygame
 # Released under a "Simplified BSD" license
 
-import pygame, sys, random
+import pygame, sys, random, pprint
 from pygame.locals import *
 
 import time
@@ -12,17 +12,19 @@ import generate_domain as gd
 BOARDWIDTH = 3  # number of columns in the board
 BOARDHEIGHT = 3 # number of rows in the board
 TILESIZE = 80
+TILESIZE_MINI = int(TILESIZE/2)
 WINDOWWIDTH = 800
-WINDOWHEIGHT = 600
+WINDOWHEIGHT = 1024
 FPS = 240
-BLANK = None
+BLANK = 0
 
-#                 R    G    B
+#                  R    G    B
 BLACK =         (  0,   0,   0)
 WHITE =         (255, 255, 255)
-BRIGHTBLUE =    (  0,  50, 255)
+BRIGHTBLUE =    (  0,  50, 150)
 DARKTURQUOISE = (  3,  54,  73)
 GREEN =         (  0, 204,   0)
+DARKGREEN =     (  0, 100,   0)
 
 BGCOLOR = DARKTURQUOISE
 TILECOLOR = GREEN
@@ -34,8 +36,14 @@ BUTTONCOLOR = WHITE
 BUTTONTEXTCOLOR = BLACK
 MESSAGECOLOR = WHITE
 
-XMARGIN = int((WINDOWWIDTH - (TILESIZE * BOARDWIDTH + (BOARDWIDTH - 1))) / 2)
-YMARGIN = int((WINDOWHEIGHT - (TILESIZE * BOARDHEIGHT + (BOARDHEIGHT - 1))) / 2)
+# XMARGIN = int((WINDOWWIDTH - (TILESIZE * BOARDWIDTH + (BOARDWIDTH - 1))) / 6)
+# YMARGIN = int((WINDOWHEIGHT - (TILESIZE * BOARDHEIGHT + (BOARDHEIGHT - 1))) / 4)
+
+XMARGIN_MAIN = 100
+YMARGIN_MAIN = 100
+
+XMARGIN_MINI = int(XMARGIN_MAIN + (BOARDWIDTH * TILESIZE) + 100)
+YMARGIN_MINI = YMARGIN_MAIN
 
 UP = 'up'
 DOWN = 'down'
@@ -62,6 +70,10 @@ def main():
     SOLVE_SURF, SOLVE_RECT = makeText('Solve',    TEXTCOLOR, TILECOLOR, WINDOWWIDTH - 120, WINDOWHEIGHT - 30)
 
     mainBoard, solutionSeq = generateNewPuzzle(80)
+
+    # MINI BOARDS
+    miniBoard, solutionSeq = generateNewPuzzle(80)
+
     SOLVEDBOARD = getStartingBoard() # a solved board is the same as the board in a start state.
     allMoves = [] # list of moves made from the solved configuration
 
@@ -202,8 +214,13 @@ def getRandomMove(board, lastMove=None):
 
 
 def getLeftTopOfTile(tileX, tileY):
-    left = XMARGIN + (tileX * TILESIZE) + (tileX - 1)
-    top = YMARGIN + (tileY * TILESIZE) + (tileY - 1)
+    left = XMARGIN_MAIN + (tileX * TILESIZE) + (tileX - 1)
+    top = YMARGIN_MAIN + (tileY * TILESIZE) + (tileY - 1)
+    return (left, top)
+
+def getLeftTopOfMiniTile(tileX, tileY):
+    left = XMARGIN_MINI + (tileX * (TILESIZE_MINI)) + (tileX - 1)
+    top = YMARGIN_MINI + (tileY * (TILESIZE_MINI)) + (tileY - 1)
     return (left, top)
 
 
@@ -222,10 +239,26 @@ def drawTile(tilex, tiley, number, adjx=0, adjy=0):
     # draw a tile at board coordinates tilex and tiley, optionally a few
     # pixels over (determined by adjx and adjy)
     left, top = getLeftTopOfTile(tilex, tiley)
-    pygame.draw.rect(DISPLAYSURF, TILECOLOR, (left + adjx, top + adjy, TILESIZE, TILESIZE))
+    if number == BLANK:
+        pygame.draw.rect(DISPLAYSURF, DARKGREEN, (left + adjx, top + adjy, TILESIZE, TILESIZE))
+    else:
+        pygame.draw.rect(DISPLAYSURF, TILECOLOR, (left + adjx, top + adjy, TILESIZE, TILESIZE))
     textSurf = BASICFONT.render(str(number), True, TEXTCOLOR)
     textRect = textSurf.get_rect()
     textRect.center = left + int(TILESIZE / 2) + adjx, top + int(TILESIZE / 2) + adjy
+    DISPLAYSURF.blit(textSurf, textRect)
+
+def drawMiniTile(board_num, tilex, tiley, number, adjx=0, adjy=0):
+    # draw a tile at board coordinates tilex and tiley, optionally a few
+    # pixels over (determined by adjx and adjy)
+    left, top = getLeftTopOfMiniTile(tilex, tiley)
+    if number == BLANK:
+        pygame.draw.rect(DISPLAYSURF, DARKGREEN, (left + adjx, (top+board_num*150) + adjy, TILESIZE_MINI, TILESIZE_MINI))
+    else:
+        pygame.draw.rect(DISPLAYSURF, TILECOLOR, (left + adjx, (top+board_num*150) + adjy, TILESIZE_MINI, TILESIZE_MINI))
+    textSurf = BASICFONT.render(str(number), True, TEXTCOLOR)
+    textRect = textSurf.get_rect()
+    textRect.center = left + int(TILESIZE_MINI / 2) + adjx, (top+board_num*150) + int(TILESIZE_MINI / 2) + adjy
     DISPLAYSURF.blit(textSurf, textRect)
 
 
@@ -245,17 +278,47 @@ def drawBoard(board, message):
 
     for tilex in range(len(board)):
         for tiley in range(len(board[0])):
-            if board[tilex][tiley]:
-                drawTile(tilex, tiley, board[tilex][tiley])
+            # if board[tilex][tiley]:
+            drawTile(tilex, tiley, board[tilex][tiley])
 
     left, top = getLeftTopOfTile(0, 0)
     width = BOARDWIDTH * TILESIZE
     height = BOARDHEIGHT * TILESIZE
     pygame.draw.rect(DISPLAYSURF, BORDERCOLOR, (left - 5, top - 5, width + 11, height + 11), 4)
 
+    drawMiniBoards()
+
     DISPLAYSURF.blit(RESET_SURF, RESET_RECT)
     DISPLAYSURF.blit(NEW_SURF, NEW_RECT)
     DISPLAYSURF.blit(SOLVE_SURF, SOLVE_RECT)
+
+
+def drawMiniBoards():
+
+    boards = list()
+
+    for board_num in range(6):
+
+        boards.append([[1, 4, 7], [2, 5, 8], [3, 6, BLANK]])
+
+        print("Board: ", board_num)
+
+        for tilex in range(len(boards[board_num])):
+            for tiley in range(len(boards[board_num][0])):
+                # if boards[board_num][tilex][tiley]:
+                drawMiniTile(board_num, tilex, tiley, boards[board_num][tilex][tiley])
+        
+        probability = 0.16
+        textSurf, textRect = makeText(str(probability), MESSAGECOLOR, BGCOLOR, (XMARGIN_MINI + TILESIZE_MINI*BOARDWIDTH + 20), ((board_num+1)*150))
+        DISPLAYSURF.blit(textSurf, textRect)
+
+    # left, top = getLeftTopOfMiniTile(0, 0)
+    # width = BOARDWIDTH * TILESIZE_MINI
+    # height = BOARDHEIGHT * TILESIZE_MINI
+    # pygame.draw.rect(DISPLAYSURF, BORDERCOLOR, (left - 5, top - 5, width + 11, height + 11), 4)
+
+    print("##################################################################")
+    pprint.pprint(boards)
 
 
 def slideAnimation(board, direction, message, animationSpeed):
@@ -354,4 +417,4 @@ def initialize_demo():
     print('networks are ready')
 
 if __name__ == '__main__':
-    initialize_demo()
+    main()

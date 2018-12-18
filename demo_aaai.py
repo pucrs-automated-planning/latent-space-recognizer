@@ -8,6 +8,11 @@ from pygame.locals import *
 
 import time
 import generate_domain as gd
+import subprocess
+
+# Interprocess communication Python/Java
+JAVAPROC = subprocess.Popen(["java", "javaProc"], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+
 # Create the constants (go ahead and experiment with different values)
 BOARDWIDTH = 3  # number of columns in the board
 BOARDHEIGHT = 3 # number of rows in the board
@@ -70,9 +75,6 @@ def main():
     SOLVE_SURF, SOLVE_RECT = makeText('Solve',    TEXTCOLOR, TILECOLOR, WINDOWWIDTH - 120, WINDOWHEIGHT - 30)
 
     mainBoard, solutionSeq = generateNewPuzzle(80)
-
-    # MINI BOARDS
-    miniBoard, solutionSeq = generateNewPuzzle(80)
 
     SOLVEDBOARD = getStartingBoard() # a solved board is the same as the board in a start state.
     allMoves = [] # list of moves made from the solved configuration
@@ -286,7 +288,17 @@ def drawBoard(board, message):
     height = BOARDHEIGHT * TILESIZE
     pygame.draw.rect(DISPLAYSURF, BORDERCOLOR, (left - 5, top - 5, width + 11, height + 11), 4)
 
+    ################################################
+
+    JAVAPROC.stdin.write(b"haha\n")
+    JAVAPROC.stdin.flush()
+    out = JAVAPROC.stdout.readline()
+    print("Java output:", out)
+
+    # Draw mini boards
     drawMiniBoards()
+
+    ################################################
 
     DISPLAYSURF.blit(RESET_SURF, RESET_RECT)
     DISPLAYSURF.blit(NEW_SURF, NEW_RECT)
@@ -301,7 +313,7 @@ def drawMiniBoards():
 
         boards.append([[1, 4, 7], [2, 5, 8], [3, 6, BLANK]])
 
-        print("Board: ", board_num)
+        # print("Board: ", board_num)
 
         for tilex in range(len(boards[board_num])):
             for tiley in range(len(boards[board_num][0])):
@@ -317,8 +329,8 @@ def drawMiniBoards():
     # height = BOARDHEIGHT * TILESIZE_MINI
     # pygame.draw.rect(DISPLAYSURF, BORDERCOLOR, (left - 5, top - 5, width + 11, height + 11), 4)
 
-    print("##################################################################")
-    pprint.pprint(boards)
+    # print("##################################################################")
+    # pprint.pprint(boards)
 
 
 def slideAnimation(board, direction, message, animationSpeed):

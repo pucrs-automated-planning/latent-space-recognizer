@@ -35,6 +35,7 @@ latplan/problem-instances/vanilla/
 latplan/share/
 new_lat/
 latplan/install.sh
+.vscode/
 
 # Keras weights
 *.h5

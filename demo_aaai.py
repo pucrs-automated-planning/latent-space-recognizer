@@ -5,14 +5,14 @@
 
 import pygame, sys, random, pprint
 from pygame.locals import *
-
+from demo_api import *
 import time
 import generate_domain as gd
 import subprocess
 
 # Interprocess communication Python/Java
 JAVAPROC = subprocess.Popen(["java", "javaProc"], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-
+API = Demo()
 # Create the constants (go ahead and experiment with different values)
 BOARDWIDTH = 3  # number of columns in the board
 BOARDHEIGHT = 3 # number of rows in the board
@@ -290,13 +290,17 @@ def drawBoard(board, message):
 
     ################################################
 
-    JAVAPROC.stdin.write(b"haha\n")
-    JAVAPROC.stdin.flush()
-    out = JAVAPROC.stdout.readline()
-    print("Java output:", out)
-
+    #JAVAPROC.stdin.write(b"haha\n")
+    #JAVAPROC.stdin.flush()
+    #proc = subprocess.Popen(["java", "-jar","goalrecognizer-obsfacts.jar"], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    #out = proc.stdout.readline()
+    #print("Java output:", out)`
+    file_name = ''.join([str(j) for i in board for j in i]) + '.jpg'
+    print(file_name)
+    API.add_obs('test_images/'+file_name,'demo/obs.dat')
+    scores = API.rank_all_goals()
     # Draw mini boards
-    drawMiniBoards()
+    drawMiniBoards(scores)
 
     ################################################
 
@@ -305,7 +309,7 @@ def drawBoard(board, message):
     DISPLAYSURF.blit(SOLVE_SURF, SOLVE_RECT)
 
 
-def drawMiniBoards():
+def drawMiniBoards(scores):
 
     boards = list()
 
@@ -320,7 +324,7 @@ def drawMiniBoards():
                 # if boards[board_num][tilex][tiley]:
                 drawMiniTile(board_num, tilex, tiley, boards[board_num][tilex][tiley])
         
-        probability = 0.16
+        probability = scores[board_num][1]
         textSurf, textRect = makeText(str(probability), MESSAGECOLOR, BGCOLOR, (XMARGIN_MINI + TILESIZE_MINI*BOARDWIDTH + 20), ((board_num+1)*150))
         DISPLAYSURF.blit(textSurf, textRect)
 

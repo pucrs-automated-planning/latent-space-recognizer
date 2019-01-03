@@ -48,7 +48,7 @@ if __name__ == "__main__":
     # Divide images according to their class.
     digits = dict()
 
-    for i in xrange(x_train.shape[0]):
+    for i in range(x_train.shape[0]):
 
         if y_train[i] not in digits:
             digits[y_train[i]] = [x_train[i]]
@@ -73,7 +73,7 @@ if __name__ == "__main__":
                 number = num_pos[i][j]  # Get the number corresponding to the position.
 
                 img = numbers[number]
-                res = cv2.resize(img,(n_width/2, n_height/2), interpolation = cv2.INTER_CUBIC)  # Resize image.
+                res = cv2.resize(img,(int(n_width/2), int(n_height/2)), interpolation = cv2.INTER_CUBIC)  # Resize image.
 
                 running_line, running_column = i * res.shape[0], j * res.shape[1]  # Define the initial positions for line and column in the new image.
                 max_line, max_column = res.shape[0] + (i * res.shape[0]), res.shape[1] + (j * res.shape[1])  # Define the max values in the new

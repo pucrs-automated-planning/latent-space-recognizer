@@ -48,9 +48,9 @@ class EncoderDecoder():
             TypeError("Invalid dimensions for image data: image={}".format(np.array(image).shape))
         ax.get_xaxis().set_visible(False)
         ax.get_yaxis().set_visible(False)
-        print(image_path) if verbose else None
+        #print(image_path) if verbose else None
         plt.tight_layout()
-        plt.savefig(image_path)
+        plt.savefig(output_path)
         plt.close()
 
     @staticmethod

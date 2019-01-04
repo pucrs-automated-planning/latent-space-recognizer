@@ -6,12 +6,11 @@
 # http://inventwithpython.com/pygame
 # Released under a "Simplified BSD" license
 
-import pygame, sys, random, pprint, string, math
-from pygame.locals import *
 
-import time
+import pygame, sys, subprocess, time, random, pprint, string, math
+from pygame.locals import *
+# from demo_api import *
 # import generate_domain as gd
-import subprocess
 
 # Interprocess communication Python/Java
 # JAVAPROC = subprocess.Popen(["java", "javaProc"], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
@@ -65,8 +64,8 @@ def main():
     BASICFONT = pygame.font.Font('freesansbold.ttf', BASICFONTSIZE)
 
     # Store the option buttons and their rectangles in OPTIONS.
-    RESET_SURF, RESET_RECT = makeText('Reset',    BUTTONTEXTCOLOR, BUTTONCOLOR, BOARD_XMARGIN, (BOARD_YMARGIN + TILESIZE*BOARD_ROWS + 80))
     NEW_SURF,   NEW_RECT   = makeText('New Game', BUTTONTEXTCOLOR, BUTTONCOLOR, BOARD_XMARGIN, (BOARD_YMARGIN + TILESIZE*BOARD_ROWS + 50))
+    RESET_SURF, RESET_RECT = makeText('Reset',    BUTTONTEXTCOLOR, BUTTONCOLOR, BOARD_XMARGIN, (BOARD_YMARGIN + TILESIZE*BOARD_ROWS + 80))
     
     mainBoard = getNewBoard()
     originalBoard = getBoardCopy(mainBoard) # for when the player wants to reset the board
@@ -155,7 +154,7 @@ def makeText(text, color, bgcolor, top, left):
 def drawGoals():
     for board_num in range(6):
         # Get image
-        board_image = pygame.image.load('mnist_sample_image.png')
+        board_image = pygame.image.load('lightsout_ui/mnist_sample_image.png')
         board_image = pygame.transform.scale(board_image, (GOALS_IMAGE_WIDTH, GOALS_IMAGE_HEIGHT))
 
         # Display image

@@ -1,5 +1,6 @@
 """
 MG's Tower of Hanoi for Python
+FROM: https://github.com/pmellingimenes/TowerHanoi4Python
 """
 import pygame
 import sys
@@ -194,7 +195,7 @@ BOARD_X_MARGIN = 125
 BOARD_Y_MARGIN = 75
 
 # Color constants object
-color = models.ColorConstants()
+color = ColorConstants()
 
 # Init pygame
 pygame.init()
@@ -205,10 +206,10 @@ screen = pygame.display.set_mode(size)
 pygame.display.set_caption("Hanoi Tower")
 
 # Create main menu object
-menu = models.MainMenu(SCREEN_WIDTH,SCREEN_HEIGHT)
+menu = MainMenu(SCREEN_WIDTH,SCREEN_HEIGHT)
 
 # Create game object
-game = models.Game(SCREEN_WIDTH,SCREEN_HEIGHT)
+game = Game(SCREEN_WIDTH,SCREEN_HEIGHT)
 
 # Discs' move variables
 done = False
@@ -237,7 +238,7 @@ def drawGoals(screen):
         GOALS_IMAGE_HEIGHT = 120
 
         # Get image
-        board_image = pygame.image.load('mnist_sample_image.png')
+        board_image = pygame.image.load('lightsout_ui/mnist_sample_image.png')
         board_image = pygame.transform.scale(board_image, (GOALS_IMAGE_WIDTH, GOALS_IMAGE_HEIGHT))
 
         # Display image

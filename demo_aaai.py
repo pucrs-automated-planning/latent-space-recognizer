@@ -8,6 +8,9 @@ import pygame, sys, subprocess, time, random, pprint
 from pygame.locals import *
 from demo_api import *
 import generate_domain as gd
+import numpy as np
+from operator import itemgetter
+
 
 # Interprocess communication Python/Java
 # JAVAPROC = subprocess.Popen(["java", "javaProc"], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
@@ -27,6 +30,8 @@ GOALS_IMAGE_WIDTH = 120
 GOALS_IMAGE_HEIGHT = 120
 NUM_GOALS = 6
 
+SCORES = None
+
 WINDOWWIDTH = BOARD_WIDTH + (BOARD_XMARGIN*2) + (GOALS_IMAGE_WIDTH*2)
 WINDOWHEIGHT = BOARD_HEIGHT + (BOARD_YMARGIN) + (GOALS_IMAGE_HEIGHT*NUM_GOALS)
 
@@ -37,14 +42,17 @@ BLANK = 0
 BLACK =         (  0,   0,   0)
 WHITE =         (255, 255, 255)
 BRIGHTBLUE =    (  0,  50, 150)
+DARKBLUE =    (  0,  10, 60)
 DARKTURQUOISE = (  3,  54,  73)
 GREEN =         (  0, 204,   0)
 DARKGREEN =     (  0, 100,   0)
+GRAY =         (  70,   70,   70)
 
-BGCOLOR = DARKTURQUOISE
-TILECOLOR = GREEN
+
+BGCOLOR = GRAY
+TILECOLOR = BRIGHTBLUE
 TEXTCOLOR = WHITE
-BORDERCOLOR = BRIGHTBLUE
+BORDERCOLOR = DARKTURQUOISE
 BASICFONTSIZE = 20
 
 BUTTONCOLOR = WHITE
@@ -63,6 +71,10 @@ RIGHT = 'right'
 
 def main():
     global FPSCLOCK, DISPLAYSURF, BASICFONT, RESET_SURF, RESET_RECT, NEW_SURF, NEW_RECT, SOLVE_SURF, SOLVE_RECT
+    #WTF STUFF
+    time.sleep(5.0)
+    API.scores = API.rank_all_goals()
+    #return 
 
     pygame.init()
     FPSCLOCK = pygame.time.Clock()
@@ -76,7 +88,18 @@ def main():
     SOLVE_SURF, SOLVE_RECT = makeText('Solve',    TEXTCOLOR, TILECOLOR, BOARD_XMARGIN, (BOARD_YMARGIN + TILESIZE*BOARD_ROWS + 110))
 
     mainBoard, solutionSeq = generateNewPuzzle(80)
-
+    mainBoard = [[3,6,7], [0,5,4], [1,2,8]]
+    a = []
+    for i in range(len(mainBoard)):
+        for j in mainBoard:
+            a.append(str(j[i]))
+    #print(a)
+    file_name = ''.join(a) + '.jpg'
+    API.set_initial_state('test_images/'+file_name, 'demo/')
+    state = API.sae.encode('test_images/'+file_name, True)
+    state2 = API.sae.encode('demo/init.png', True)
+    print('State1:', state )
+    print('State2:', state2 )
     SOLVEDBOARD = getStartingBoard() # a solved board is the same as the board in a start state.
     allMoves = [] # list of moves made from the solved configuration
 
@@ -87,7 +110,7 @@ def main():
             msg = 'Solved!'
 
         drawBoard(mainBoard, msg)
-
+        #print(mainBoard)
         checkForQuit()
         for event in pygame.event.get(): # event handling loop
             if event.type == MOUSEBUTTONUP:
@@ -129,8 +152,22 @@ def main():
                     slideTo = DOWN
 
         if slideTo:
+            
             slideAnimation(mainBoard, slideTo, 'Click tile or press arrow keys to slide.', 8) # show slide on screen
             makeMove(mainBoard, slideTo)
+            #drawGoals(API.scores)
+            a = []
+            for i in range(len(mainBoard)):
+                for j in mainBoard:
+                    a.append(str(j[i]))
+            #print(a)
+            file_name = ''.join(a) + '.jpg'
+            print(file_name)
+            API.add_obs('test_images/'+file_name,'demo/obs.dat')
+
+            #API.call_recognizer()
+            #time.sleep(1.0)
+            API.scores = API.rank_all_goals()
             allMoves.append(slideTo) # record the slide
         pygame.display.update()
         FPSCLOCK.tick(FPS)
@@ -238,7 +275,7 @@ def drawTile(tilex, tiley, number, adjx=0, adjy=0):
     # pixels over (determined by adjx and adjy)
     left, top = getLeftTopOfTile(tilex, tiley)
     if number == BLANK:
-        pygame.draw.rect(DISPLAYSURF, DARKGREEN, (left + adjx, top + adjy, TILESIZE, TILESIZE))
+        pygame.draw.rect(DISPLAYSURF, DARKBLUE, (left + adjx, top + adjy, TILESIZE, TILESIZE))
     else:
         pygame.draw.rect(DISPLAYSURF, TILECOLOR, (left + adjx, top + adjy, TILESIZE, TILESIZE))
     textSurf = BASICFONT.render(str(number), True, TEXTCOLOR)
@@ -279,13 +316,14 @@ def drawBoard(board, message):
     #out = proc.stdout.readline()
     #print("Java output:", out)`
 
-    file_name = ''.join([str(j) for i in board for j in i]) + '.jpg'
-    print(file_name)
-    API.add_obs('test_images/'+file_name,'demo/obs.dat')
-    scores = API.rank_all_goals()
+    #file_name = ''.join([str(j) for i in board for j in i]) + '.jpg'
+    #print(file_name)
+    #API.add_obs('test_images/'+file_name,'demo/obs.dat')
+    #time.sleep(1.0)
+    #scores = API.rank_all_goals()
 
     # Draw goals
-    drawGoals(scores)
+    drawGoals(API.scores)
 
     ################################################
 
@@ -295,10 +333,22 @@ def drawBoard(board, message):
 
 
 def drawGoals(scores):
+    if scores == None:
+     #   print("NONE")
+        return
+    #print(scores)
+    data = scores
+    data.sort(key=itemgetter(1), reverse=True)
     for board_num in range(6):
         # Get image
-        board_image = pygame.image.load('lightsout_ui/mnist_sample_image.png')
+        Z = API.sae.decode(scores[board_num][0],False)[0]
+        Z = (Z > 0.5) * -1
+        board_image = pygame.surfarray.make_surface(Z)
+        board_image = pygame.transform.rotate(board_image, -90)
+        board_image = pygame.transform.flip(board_image, True, False)
+        #board_image = pygame.image.load('lightsout_ui/mnist_sample_image.png')
         board_image = pygame.transform.scale(board_image, (GOALS_IMAGE_WIDTH, GOALS_IMAGE_HEIGHT))
+
 
         # Display image
         left = BOARD_XMARGIN + TILESIZE*BOARD_COLUMNS + BOARD_XMARGIN
@@ -306,12 +356,22 @@ def drawGoals(scores):
         DISPLAYSURF.blit(board_image, (left, top))
 
         # Set probability
-        probability = scores[board_num][1]
+        probability = round(float(scores[board_num][1]), 3)
+        count = 1
+        for score in data:
+            if str(score[0]) == str(scores[board_num][0]):
+                break
+            count += 1
+        complement = 'th'
+        if count == 1 : complement = 'st'
+        if count == 2 : complement = 'nd'
+        if count == 3 : complement = 'rd'
+        placement = str(count) + complement #+ str(probability)
 
         # Show text with probability
         text_left = (BOARD_XMARGIN*2) + BOARD_WIDTH + GOALS_IMAGE_HEIGHT + 25
         text_top = BOARD_YMARGIN + (board_num * (GOALS_IMAGE_HEIGHT + 25)) + (GOALS_IMAGE_HEIGHT/2 - 10)
-        textSurf, textRect = makeText(str(probability), MESSAGECOLOR, BGCOLOR, text_left, text_top)
+        textSurf, textRect = makeText(str(placement), MESSAGECOLOR, BGCOLOR, text_left, text_top)
         DISPLAYSURF.blit(textSurf, textRect)
 
 
@@ -367,7 +427,7 @@ def generateNewPuzzle(numSlides):
     lastMove = None
     for i in range(numSlides):
         move = getRandomMove(board, lastMove)
-        slideAnimation(board, move, 'Generating new puzzle...', animationSpeed=int(TILESIZE / 3))
+        #slideAnimation(board, move, 'Generating new puzzle...', animationSpeed=int(TILESIZE / 3))
         makeMove(board, move)
         sequence.append(move)
         lastMove = move

@@ -66,6 +66,27 @@ def generate_pddl_action(parameter, pre_cond, effect, action_name):
     action += '    :precondition (and\n'
     for pre in range(len(pre_cond)):
         if pre_cond[pre] == 1: action += '        (p' + str(pre) + ')\n'
+        elif pre_cond[pre] == -1: 
+            action += '        (not_p' + str(pre) + ')\n'
+    action += '    )\n    :effect(and\n'
+    for eff in range(len(effect)):
+        if not effect[eff]: continue
+        elif effect[eff] == 1: 
+            action += '        (p' + str(eff) + ')\n'
+            action += '        (not (not_p' + str(eff) + '))\n'
+        elif effect[eff] == -1: 
+            action += '        (not (p' + str(eff) + '))\n'
+            action += '        (not_p' + str(eff) + ')\n'
+    action += '    )\n)\n'
+    return action
+
+
+def generate_pddl_action_2(parameter, pre_cond, effect, action_name):
+    action = '(:action ' + str(action_name) + '\n'
+    action += '    :parameters ()\n'
+    action += '    :precondition (and\n'
+    for pre in range(len(pre_cond)):
+        if pre_cond[pre] == 1: action += '        (p' + str(pre) + ')\n'
         elif pre_cond[pre] == -1: action += '        (not (p' + str(pre) + '))\n'
     action += '    )\n    :effect(and\n'
     for eff in range(len(effect)):
@@ -103,6 +124,7 @@ def export_pddl(pruned, path, N):
         output_file.write('    (:predicates\n')
         for i in range(N):
             output_file.write('        (p' + str(i) + ')\n')
+            output_file.write('        (not_p' + str(i) + ')\n')
         output_file.write('    )\n')
         for action in generate_all_actions_pddl(pruned):
             output_file.write(action)
@@ -115,18 +137,37 @@ def generate_problem(init_state, goal_state):
     txt += '    (:init\n'
     for pre in range(len(init_state)):
         if init_state[pre]:  txt+='       ('+ 'p' + str(pre) + ')' +'\n'
-        else: txt+='       (not ('+ 'p' + str(pre) + '))' +'\n'
+        else: txt+='       (not_'+ 'p' + str(pre) + ')' +'\n'
     txt += '    )\n'
     txt += '    (:goal\n'
     txt += '      (and\n'
     for pre in range(len(goal_state)):
         if goal_state[pre]:  txt+='       ('+ 'p' + str(pre) + ')' +'\n'
-        else: txt+='       (not ('+ 'p' + str(pre) + '))' +'\n'
+        else: txt+='       (not_'+ 'p' + str(pre) + ')' +'\n'
     txt += '      )\n'
     txt += '    )\n)'
     return txt
 
+
 def generate_problem_no_negatives(init_state, goal_state):
+    txt = '(define (problem pb1)\n'
+    txt += '    (:domain generated-domain)\n'
+#    txt += '    (:requirements :strips :negative-preconditions)\n'
+    txt += '    (:init\n'
+    for pre in range(len(init_state)):
+        if init_state[pre]:  txt+='       ('+ 'p' + str(pre) + ')' +'\n'
+        else: txt+='       (not_'+ 'p' + str(pre) + ')' +'\n'
+    txt += '    )\n'
+    txt += '    (:goal\n'
+    txt += '      (and\n'
+    for pre in range(len(goal_state)):
+        if goal_state[pre]:  txt+='       ('+ 'p' + str(pre) + ')' +'\n'
+        else: txt+='       (not_'+ 'p' + str(pre) + ')' +'\n'
+    txt += '      )\n'
+    txt += '    )\n)'
+    return txt
+
+def generate_problem_no_negatives2(init_state, goal_state):
     txt = '(define (problem pb1)\n'
     txt += '    (:domain generated-domain)\n'
 #    txt += '    (:requirements :strips :negative-preconditions)\n'
@@ -146,6 +187,23 @@ def generate_problem_no_negatives(init_state, goal_state):
 
 
 def export_problem_pgr(init_state,path=''):
+    txt = '(define (problem pb1)\n'
+    txt += '    (:domain generated-domain)\n'
+#    txt += '    (:requirements :strips :negative-preconditions)\n'
+    txt += '    (:init\n'
+    for pre in range(len(init_state)):
+        if init_state[pre]:  txt+='       ('+ 'p' + str(pre) + ')' +'\n'
+        else: txt+='       (not_'+ 'p' + str(pre) + ')' +'\n'
+    txt += '    )\n'
+    txt += '    (:goal\n'
+    txt += '      (and\n'
+    txt += '            <HYPOTHESIS>\n'
+    txt += '      )\n'
+    txt += '    )\n)'
+    data = open(path+'template.pddl', 'w')
+    data.write(txt)
+
+def export_problem_pgr_noneg(init_state,path=''):
     txt = '(define (problem pb1)\n'
     txt += '    (:domain generated-domain)\n'
 #    txt += '    (:requirements :strips :negative-preconditions)\n'
@@ -250,6 +308,19 @@ def export_trace_obs(trace, path='obs.dat'):
         data.write(action + '\n')
 
 def export_hypothesis(list_goals, path='hyps.dat'):
+    data = open(path, 'w')
+    first = True
+    for state in list_goals:
+        txt = ''
+        for pre in range(len(state)):
+            if not first: txt+= ','
+            if state[pre]:  txt+='('+ 'p' + str(pre) + ')'
+            else: txt+='(not_'+ 'p' + str(pre) + ')'
+            first = False
+        data.write(txt + '\n')
+        first = True
+
+def export_hypothesis2(list_goals, path='hyps.dat'):
     data = open(path, 'w')
     first = True
     for state in list_goals:
@@ -469,13 +540,14 @@ def set_up_pgr(network_folder,path_domain, path_dir, path_output='out1', pddl_ac
         print("Done")
     else:
         print("Planning skiped!")
+    call(['cp', 'sas_plan', path_output+ '/' +'log.txt'])
     save_plan_img(cvt_ttotran_MP(init.tolist(),pddl_actions), path_output + '/plan.png', enc_dec, SIZE_H, SIZE_W)
     export_problem_pgr(init, path_output+ '/')
     transitions = cvt_ttotran_MP(init,pddl_actions)
     traces = cvt_trantotrace(cvt_ttotran_MP(init,pddl_actions),pddl_actions)
     p_traces = percentage_slice(traces, float(obs)/100.0)
     call(['cp', path_domain, path_output+ '/' +'domain.pddl'])
-    call(['cp', 'sas_plan', path_output+ '/' +'log.txt'])
+    #call(['cp', 'sas_plan', path_output+ '/' +'log.txt'])
     export_trace_obs(p_traces, path_output + '/obs.dat')
     #transitions[0] = transitions[0].tolist()
     #print(transitions)

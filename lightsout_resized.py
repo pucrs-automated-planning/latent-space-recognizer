@@ -22,18 +22,18 @@ from operator import itemgetter
 BOARD_COLUMNS = 4  # number of columns in the board
 BOARD_ROWS = 4 # number of rows in the board
 
-TILESIZE = 60
-BOARD_XMARGIN = 75
-BOARD_YMARGIN = 75
+TILESIZE = 40
+BOARD_XMARGIN = 50
+BOARD_YMARGIN = 50
 
 BOARD_WIDTH = BOARD_COLUMNS * TILESIZE
 BOARD_HEIGHT = BOARD_ROWS * TILESIZE
 
-GOALS_IMAGE_WIDTH = 120
-GOALS_IMAGE_HEIGHT = 120
+GOALS_IMAGE_WIDTH = 60
+GOALS_IMAGE_HEIGHT = 60
 NUM_GOALS = 6
 
-WINDOWWIDTH = BOARD_WIDTH + (BOARD_XMARGIN*2) + (GOALS_IMAGE_WIDTH*2)
+WINDOWWIDTH = BOARD_WIDTH + (BOARD_XMARGIN*2) + (GOALS_IMAGE_WIDTH*2) + 50
 WINDOWHEIGHT = BOARD_HEIGHT + (BOARD_YMARGIN) + (GOALS_IMAGE_HEIGHT*NUM_GOALS)
 
 FPS = 240
@@ -274,7 +274,7 @@ def drawBoard(board, message):
 
     #text_left3 = (BOARD_XMARGIN*2) + BOARD_WIDTH*0.9
     #text_top3 = 10
-    textSurf3, textRect3 = makeText('State representation:', MESSAGECOLOR, BGCOLOR, left, top - BOARD_HEIGHT*0.2)
+    textSurf3, textRect3 = makeText('State representation:', MESSAGECOLOR, BGCOLOR, left-30, top - BOARD_HEIGHT*0.2)
     DISPLAYSURF.blit(textSurf3, textRect3)
 
     
